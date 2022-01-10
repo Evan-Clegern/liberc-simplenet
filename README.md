@@ -3,8 +3,14 @@ A relatively developer-friendly C++ API for the Linux Sockets system, implementi
 
 The files "client_man.cpp" and "server_man.cpp" illustrate a simple UDP "ping" and TCP session system with the API's basic socket system.
 
+## Warnings
+This little API:
+1. Started as an experiment.
+2. Is not 100% stable.
+3. Is only for Linux, as it uses the built-in C library.
+4. Blends C and C++ code within its namespace.
 
-## Refined version
-So yeah, a day after making the first one, I decided it needed polish (I mean, two classes is kidna gross for the functionality of one).
+That in mind, it does seem to work on loopback interfaces, but I will test it on two different machines soon.
 
-So now it uses C++'s polymorphism a little, and has some more general utility tied in. Seems to work a little better from what I tested, but since it doesn't come with a few "wait" commands, I had to make a quick jerry-rig to ensure the TCP connection (in the example file) can be established. Other than that, it still seems to work smoothly, and the code itself looks a bit nicer now.
+# Installation
+Simply clone the git repository and do "make all" to generate the shared library and to compile the two test executables.

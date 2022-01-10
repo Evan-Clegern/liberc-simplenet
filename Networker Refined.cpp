@@ -873,7 +873,7 @@ const std::vector<short> c_TCP_Server::singleLoopOp() {
 					} else if (i == u16(this->m_maxClients)) {
 						throw c_NetError("Too many clients connected to server!", ERR_MED);
 					}
-					usleep(1); //Wait one microsecond
+					usleep(1); //Wait one microsecond between "is someone wanting in?" checks
 				}
 			} while (X < 0);
 			//Loops through as many connections as we have pending
@@ -884,7 +884,7 @@ const std::vector<short> c_TCP_Server::singleLoopOp() {
 			if (FD_ISSET(sd, &this->m_fdHandler) && this->m_cliSocks.at(i).m_connected) {
 				statusVec.push_back(i);
 			}
-			usleep(2); //Wait Two microseconds in between checks
+			usleep(1); //Wait only one microsecond between checks
 		}
 	}
 	return statusVec;

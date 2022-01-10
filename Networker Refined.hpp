@@ -208,6 +208,7 @@ public:
 	//! Function intended to be run FIRST in a loop.
 	//! Returns a zero-length vector if nothing happened,
 	//! Otherwise, returns a vector of sockets. Positive --> Waiting; Negative --> New.
+	//! NOTE: The first client (0) can't be negative, understandably, so check as (X <= 0) not (X < 0)
 	const std::vector<short> singleLoopOp();
 	
 	const bool subsockExists(short i_socket) const noexcept;

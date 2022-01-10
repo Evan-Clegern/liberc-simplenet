@@ -20,11 +20,11 @@ namespace ERCLIB { namespace Net {
 
 // Networking Headers
 #include <sys/socket.h>
-#include <netinet/in.h>
 #include <arpa/inet.h>
+#include <netinet/in.h>
 #include <fcntl.h> // for nonblocking mode
-
-
+#include <unistd.h> // for closing descriptors, apparently
+#include <sys/time.h>
 
 /********!
  * @name ConnWait
@@ -97,6 +97,7 @@ public:
 	const std::string fullWhat() const noexcept;
 };
 
+
 //! Wrapper for IP version 4 Addresses.
 struct c_IPv4Addr {
 	u8 A, B, C, D;
@@ -141,7 +142,7 @@ public:
 	virtual const int& r_getSocketDescriptor() const noexcept; //Immutable reference
 	virtual const int& r_getOperatingSocket() const noexcept;
 	
-	virtual bool receive(char* i_bufferTo, u32 i_bufferSize);
+	virtual bool receive(char* i_bufferTo, u16 i_bufferSize);
 	virtual void shutdownSocket();
 };
 
@@ -152,8 +153,8 @@ public:
 	explicit c_Socket_UDP(c_IPv4Addr i_overAddr, u16 i_port, ConnWait i_waitForConn);
 	~c_Socket_UDP();
 	
-	bool receiveWithAddr(char* i_bufferTo, u32 i_bufferSize, c_IPv4Addr* ip_addressTo, u16* ip_portTo);
-	u32 transmit(char* i_bufferFrom, u32 i_bufferSize, bool i_endOfRecord, c_IPv4Addr i_addressTo, u16 i_portTo);
+	bool receiveWithAddr(char* i_bufferTo, u16 i_bufferSize, c_IPv4Addr* ip_addressTo, u16* ip_portTo);
+	u32 transmit(char* i_bufferFrom, u16 i_bufferSize, bool i_endOfRecord, c_IPv4Addr i_addressTo, u16 i_portTo);
 };
 
 //! A TCP handling socket, with a fixed input or output mode. 
@@ -170,21 +171,56 @@ public:
 	
 	bool getClientInfo(c_IPv4Addr* ip_addr, u16* ip_port);
 	
-	u32 transmit(char* i_bufferFrom, u32 i_bufferSize, bool i_endOfRecord);
+	u32 transmit(char* i_bufferFrom, u16 i_bufferSize, bool i_endOfRecord);
 };
 
-/*
-//! A combination of TCP sockets 
-struct c_TCP_Server {
-	c_Socket_TCP m_masterSocket;
-	fd_set m_controlSetFD;
-	std::vector<c_Socket_TCP> m_sockets;
-	const u16 m_allowedClients;
+//! Contains basic information for a Subsocket.
+struct c_TCP_Subsock {
+	int& m_mainDesc, m_opDesc=0;
+	bool m_connected=0;
 	
-	explicit c_TCP_Server(u16 i_port, u16 i_maxClients);
-	~c_TCP_Server();
+	explicit c_TCP_Subsock(int& i_descriptor);
 };
-*/
+
+//! Abstracted from c_BaseSocket. Contains multiple TCP Listening sockets.
+//! None of the sockets are in DO_WAIT (i.e. all in NONBLOCK mode)
+class c_TCP_Server {
+	c_IPv4Addr m_baseAddress;
+	u16 m_sharedPort;
+	int m_masterSocket;
+	short m_currentClients = 0;
+	bool m_masterPrep = 0;
+	const short m_maxClients;
+	
+	sockaddr_in m_cSocket;
+	std::vector<c_TCP_Subsock> m_cliSocks;
+	
+	int m_currentMaxFD;
+	fd_set m_fdHandler;
+public:
+	explicit c_TCP_Server(u16 i_port, short i_clients=0x7FFF);
+	explicit c_TCP_Server(c_IPv4Addr i_overAddr, u16 i_port, short i_clients=0x7FFF);
+	
+	const short getActiveClients() const noexcept;
+	const u16 getPortInUse() const noexcept;
+	const c_IPv4Addr getAddressInUse() const noexcept;
+	
+	//! Function intended to be run FIRST in a loop.
+	//! Returns a zero-length vector if nothing happened,
+	//! Otherwise, returns a vector of sockets. Positive --> Waiting; Negative --> New.
+	
+	const std::vector<short> singleLoopOp();
+	
+	const bool subsockExists(short i_socket) const noexcept;
+	const bool isSubsockConnected(short i_socket) const noexcept;
+	const c_IPv4Addr getSubsockClient(short i_socket) const;
+	
+	const bool receiveOnSubsock(short i_socket, char* ip_buff, u16 i_buffSize);
+	const u32  transmitOnSubsock(short i_socket, char* ip_buff, u16 i_buffSize, bool i_eor);
+	const bool shutdownSubsock(short i_socket);
+	
+	const bool shutdownServer();
+};
 
 }
 }

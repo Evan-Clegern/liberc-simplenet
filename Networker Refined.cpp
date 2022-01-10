@@ -825,7 +825,7 @@ const std::vector<short> c_TCP_Server::singleLoopOp() {
 	
 	std::vector<short> statusVec;
 	
-	timeval X; X.tv_sec = 1; X.tv_usec = 5000; //1.500 second wait for something to happen.
+	timeval X; X.tv_sec = 0; X.tv_usec = 125000; //0.0125 second wait for something to happen.
 	int activity = select(this->m_currentMaxFD + 1, &this->m_fdHandler, NULL, NULL, &X);
 	if (activity < 0) {
 		if (errno == EINTR) return statusVec;

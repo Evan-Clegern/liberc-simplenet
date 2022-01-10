@@ -191,7 +191,7 @@ const int& c_BaseSocket::r_getOperatingSocket() const noexcept {
 }
 bool c_BaseSocket::receive(char* i_bufferTo, u16 i_bufferSize) {
 	if (!this->mv_bound || !this->mv_initialized) return 0;
-	int readData = recv(this->mv_operateSocket, i_bufferTo, i_bufferSize, MSG_WAITALL);
+	int readData = recv(this->mv_operateSocket, i_bufferTo, i_bufferSize, 0);
 	if (readData == 0) return 0;
 	if (readData < 0) {
 		if ((errno == EAGAIN) || (errno == EWOULDBLOCK)) {
@@ -300,7 +300,7 @@ bool c_Socket_UDP::receiveWithAddr(char* i_bufferTo, u16 i_bufferSize, c_IPv4Add
 	sockaddr_in tempbruh; unsigned int bruhSize = sizeof(tempbruh);
 	if (!this->mv_bound || !this->mv_initialized) return 0;
 	
-	int readStatus = recvfrom(this->mv_operateSocket, i_bufferTo, i_bufferSize, MSG_WAITALL, (sockaddr*)&tempbruh, &bruhSize);
+	int readStatus = recvfrom(this->mv_operateSocket, i_bufferTo, i_bufferSize, 0, (sockaddr*)&tempbruh, &bruhSize);
 	
 	if (readStatus == 0) return 0;
 	if (readStatus < 0) {
@@ -775,7 +775,7 @@ c_TCP_Server::c_TCP_Server(c_IPv4Addr i_overAddr, u16 i_port, short i_clients) :
 	FD_SET(m_masterSocket, &m_fdHandler);
 	m_currentMaxFD = m_masterSocket;
 	
-	for (short i=0; i<m_maxClients; i++) {
+	for (u16 i=0; i<u16(m_maxClients); i++) {
 		c_TCP_Subsock xFile(m_masterSocket);
 		m_cliSocks.push_back(xFile);
 	}
@@ -825,7 +825,7 @@ const std::vector<short> c_TCP_Server::singleLoopOp() {
 	
 	std::vector<short> statusVec;
 	
-	timeval X; X.tv_sec = 1; X.tv_usec =1; //1.0001 second wait for something to happen.
+	timeval X; X.tv_sec = 1; X.tv_usec = 5000; //1.500 second wait for something to happen.
 	int activity = select(this->m_currentMaxFD + 1, &this->m_fdHandler, NULL, NULL, &X);
 	if (activity < 0) {
 		if (errno == EINTR) return statusVec;
@@ -862,24 +862,29 @@ const std::vector<short> c_TCP_Server::singleLoopOp() {
 				}
 				//Assign it
 				for (u16 i=0; i<u16(this->m_maxClients); i++) {
-					if (this->m_cliSocks[i].m_connected == 0) {
-						this->m_cliSocks[i].m_opDesc = X;
-						this->m_cliSocks[i].m_connected = 1;
+					if (this->m_cliSocks.at(i).m_connected == false) {
+						this->m_cliSocks.at(i).m_opDesc = X;
+						this->m_cliSocks.at(i).m_connected = 1;
 						this->m_currentClients++;
 						
 						statusVec.push_back(i * -1);
+						X = -5;
+						break; //Escape current level to next X iteration
+					} else if (i == u16(this->m_maxClients)) {
+						throw c_NetError("Too many clients connected to server!", ERR_MED);
 					}
-					throw c_NetError("Too many clients connected to server!", ERR_MED);
+					usleep(1); //Wait one microsecond
 				}
 			} while (X < 0);
 			//Loops through as many connections as we have pending
 		}
 		//Test if any existing connection(s) active
 		for (u16 i=0; i<u16(this->m_maxClients); i++) {
-			int sd = this->m_cliSocks[i].m_opDesc;
-			if (FD_ISSET(sd, &this->m_fdHandler)) {
+			int sd = this->m_cliSocks.at(i).m_opDesc;
+			if (FD_ISSET(sd, &this->m_fdHandler) && this->m_cliSocks.at(i).m_connected) {
 				statusVec.push_back(i);
 			}
+			usleep(2); //Wait Two microseconds in between checks
 		}
 	}
 	return statusVec;
@@ -924,7 +929,7 @@ const bool c_TCP_Server::receiveOnSubsock(short i_socket, char* ip_buff, u16 i_b
 	
 	auto subsockPtr = &this->m_cliSocks[i_socket];
 	
-	int readData = recv(subsockPtr->m_opDesc, ip_buff, i_buffSize, MSG_WAITALL);
+	int readData = recv(subsockPtr->m_opDesc, ip_buff, i_buffSize, 0);
 	
 	if (readData == 0) return 0;
 	if (readData < 0) {

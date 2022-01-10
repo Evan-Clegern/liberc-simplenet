@@ -1,8 +1,7 @@
 # liberc-simplenet
-A simple C++ extension of the integrated Linux "sys/sockets.h" system, with error messages and general polish. There is still some more cleanup and documentation to be done, but it does work (at least on loopback, with different ports).
+A relatively developer-friendly C++ API for the Linux Sockets system, implementing <unistd.h>, <sys/sockets.h>, <arpa/inet.h>, <sys/time.h>, and <fcntl.h> from the C library, with the C++ library and polymorphic classes. Provides two-way TCP and UDP sockets, as well as a specialty (but work in progress) "TCP Server" class, which enables multiple clients to connect to the same port on a server machine. It uses the C-based File Descriptor system to implement this without multithreading, and overall provides a useful interface for managing multiple inbound connections.
 
-
-The files "client_man.cpp" and "server_man.cpp" illustrate a simple UDP "ping" and TCP session system with the library.
+The files "client_man.cpp" and "server_man.cpp" illustrate a simple UDP "ping" and TCP session system with the API's basic socket system.
 
 
 ## Refined version

@@ -99,8 +99,8 @@ const std::string c_IPv4Addr::toText() const noexcept {
 const Clib::sockaddr_in c_IPv4Addr::makeCSocket(u16 i_port) const noexcept {
 	Clib::sockaddr_in N;
 	N.sin_family = AF_INET;
-	N.sin_addr.s_addr = Clib::htonl(this->toUint());
-	N.sin_port = Clib::htons(i_port);
+	N.sin_addr.s_addr = htonl(this->toUint());
+	N.sin_port = htons(i_port);
 	return N;
 }
 // END OLD
@@ -328,8 +328,8 @@ bool c_Socket_UDP::receiveWithAddr(char* i_bufferTo, u16 i_bufferSize, c_IPv4Add
 		}
 	}
 	
-	*ip_portTo = Clib::ntohs(tempbruh.sin_port);
-	u32 B = Clib::ntohl(tempbruh.sin_addr.s_addr);
+	*ip_portTo = ntohs(tempbruh.sin_port);
+	u32 B = ntohl(tempbruh.sin_addr.s_addr);
 	u8 nA = u8(B >> 24), nB = u8(B >> 16), nC = u8(B >> 8), nD = u8(B);
 	c_IPv4Addr newer(nA, nB, nC, nD);
 	*ip_addressTo = newer;
@@ -567,8 +567,8 @@ bool c_Socket_TCP::getClientInfo(c_IPv4Addr* ip_addr, u16* ip_port) {
 		}
 	}
 	
-	*ip_port = Clib::ntohs(bruh.sin_port);
-	u32 B = Clib::ntohl(bruh.sin_addr.s_addr);
+	*ip_port = ntohs(bruh.sin_port);
+	u32 B = ntohl(bruh.sin_addr.s_addr);
 	u8 nA = u8(B >> 24), nB = u8(B >> 16), nC = u8(B >> 8), nD = u8(B);
 	c_IPv4Addr newer(nA, nB, nC, nD);
 	*ip_addr = newer;
@@ -917,7 +917,7 @@ const c_IPv4Addr c_TCP_Server::getSubsockClient(short i_socket) const {
 		}
 	}
 
-	u32 B = Clib::ntohl(X.sin_addr.s_addr);
+	u32 B = ntohl(X.sin_addr.s_addr);
 	u8 nA = u8(B >> 24), nB = u8(B >> 16), nC = u8(B >> 8), nD = u8(B);
 	c_IPv4Addr newer(nA, nB, nC, nD);
 	return newer;

@@ -1,6 +1,13 @@
-# liberc-simplenet
-A relatively developer-friendly C++ API for the Linux Sockets system, implementing <unistd.h>, <sys/sockets.h>, <arpa/inet.h>, <sys/time.h>, and <fcntl.h> from the C library, with the C++ library and polymorphic classes. Provides two-way TCP and UDP sockets, as well as a specialty (but work in progress) "TCP Server" class, which enables multiple clients to connect to the same port on a server machine. It uses the C-based File Descriptor system to implement this without multithreading, and overall provides a useful interface for managing multiple inbound connections.
+# SimpleNet
+A relatively developer-friendly C++ API for the Linux Sockets system. Abstracts the creation and management of networking from the C library with the C++ library and polymorphic classes.
 
+### Capabilities
+SimpleNet Provides two-way TCP and UDP sockets, as well as a specialty (but work in progress) "TCP Server" class, which enables multiple clients to connect to the same port on a server machine. It uses the C-based File Descriptor system to implement this without multithreading, and overall provides a useful interface for managing multiple inbound connections.
+
+#### UNISTD
+Since the library automatically includes most of the Unix standard library (<unistd.h>), it also provides access to (in ERCLib::Net::Clib::) the built-in utilities for Linux -- most notably, "sleep" and "usleep."
+
+### Test Files
 The files "client_man-simple.cpp" and "server_man-simple.cpp" illustrate a simple UDP "ping" and TCP session system with the API's basic socket system. Meanwhile, "client_man-adv.cpp" and "server_man-adv.cpp" illustrate the API's TCP Server system, with two sessions from a client and four sockets on the server.
 
 ## Warnings

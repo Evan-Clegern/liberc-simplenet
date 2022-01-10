@@ -18,6 +18,7 @@ typedef std::uint_fast8_t  u8;
 
 namespace ERCLIB { namespace Net {
 
+namespace Clib {
 // Networking Headers
 #include <sys/socket.h>
 #include <arpa/inet.h>
@@ -25,6 +26,7 @@ namespace ERCLIB { namespace Net {
 #include <fcntl.h> // for nonblocking mode
 #include <unistd.h> // for closing descriptors, apparently
 #include <sys/time.h>
+}
 
 /********!
  * @name ConnWait
@@ -114,7 +116,7 @@ struct c_IPv4Addr {
 	const u32 toUint() const noexcept;
 	const std::string toText() const noexcept;
 	//! Creates a "C Socket" for use in the "sys/sockets.h" interface.
-	const sockaddr_in makeCSocket(u16 i_port) const noexcept;
+	const Clib::sockaddr_in makeCSocket(u16 i_port) const noexcept;
 };
 
 //! Virtual Class which handles most of the initialization and storage of a system-level socket and address.
@@ -126,7 +128,7 @@ protected:
 	int mv_baseSocketDesc; //! Automatically-assigned file descriptor integer for our socket.
 	c_IPv4Addr mv_address; //! Our IPv4 address we've given ourselves; hopefully just the local one.
 	u16 mv_socketPort; //! The port we've bound ourselves to.
-	sockaddr_in mv_cSocket; //! The "C Socket" representation of the port and IPv4Addr.
+	Clib::sockaddr_in mv_cSocket; //! The "C Socket" representation of the port and IPv4Addr.
 	int mv_oldSocketFlags; //! For shutdown/release purposes.
 	int mv_operateSocket; //! Operating socket device
 	
@@ -192,7 +194,7 @@ class c_TCP_Server {
 	bool m_masterPrep = 0;
 	const short m_maxClients;
 	
-	sockaddr_in m_cSocket;
+	Clib::sockaddr_in m_cSocket;
 	std::vector<c_TCP_Subsock> m_cliSocks;
 	
 	int m_currentMaxFD;

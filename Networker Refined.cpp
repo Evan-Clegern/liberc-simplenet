@@ -42,11 +42,10 @@ const std::string c_NetError::fullWhat() const noexcept {
 
 
 c_IPv4Addr::c_IPv4Addr() {
-	auto N = INADDR_ANY;
-	A = (N >> 24);
-	B = (N >> 16);
-	C = (N >> 8);
-	D = u8(N);
+	A = 127; //Loopback
+	B = 0;
+	C = 0;
+	D = 1;
 }
 void c_IPv4Addr::operator=(const c_IPv4Addr& b) {
 	this->A = b.A;
@@ -97,25 +96,25 @@ const std::string c_IPv4Addr::toText() const noexcept {
 	return N;
 }
 
-const sockaddr_in c_IPv4Addr::makeCSocket(u16 i_port) const noexcept {
-	sockaddr_in N;
+const Clib::sockaddr_in c_IPv4Addr::makeCSocket(u16 i_port) const noexcept {
+	Clib::sockaddr_in N;
 	N.sin_family = AF_INET;
-	N.sin_addr.s_addr = htonl(this->toUint());
-	N.sin_port = htons(i_port);
+	N.sin_addr.s_addr = Clib::htonl(this->toUint());
+	N.sin_port = Clib::htons(i_port);
 	return N;
 }
 // END OLD
 
 void c_BaseSocket::deleteDescriptor() {
 	if (this->mv_bound) {
-		shutdown(this->mv_baseSocketDesc, SHUT_RDWR);
+		Clib::shutdown(this->mv_baseSocketDesc, Clib::SHUT_RDWR);
 	}
-	close(this->mv_baseSocketDesc);
+	Clib::close(this->mv_baseSocketDesc);
 	this->mv_baseSocketDesc = 0;
 }
 
 void c_BaseSocket::restoreDescriptor() {
-	fcntl(this->mv_baseSocketDesc, F_SETFL, this->mv_oldSocketFlags);
+	Clib::fcntl(this->mv_baseSocketDesc, F_SETFL, this->mv_oldSocketFlags);
 }
 
 void c_BaseSocket::bindAndConfigure() {
@@ -126,7 +125,7 @@ void c_BaseSocket::bindAndConfigure() {
 	int tmpOpt = 1;
 	
 	this->mv_cSocket = this->mv_address.makeCSocket(this->mv_socketPort);
-	int X = setsockopt(this->mv_baseSocketDesc, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT | SO_KEEPALIVE, &tmpOpt, sizeof(tmpOpt));
+	int X = Clib::setsockopt(this->mv_baseSocketDesc, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT | SO_KEEPALIVE, &tmpOpt, sizeof(tmpOpt));
 	if (X != 0){
 		if (errno == EBADF) {
 			throw c_NetError("Unable to configure bound socket -- Unknown Socket Error!", ERR_FTL);
@@ -147,7 +146,7 @@ void c_BaseSocket::bindAndConfigure() {
 		}
 	}
 	
-	X = bind(this->mv_baseSocketDesc, (sockaddr*)&this->mv_cSocket, sizeof(sockaddr_in));
+	X = Clib::bind(this->mv_baseSocketDesc, (Clib::sockaddr*)&this->mv_cSocket, sizeof(Clib::sockaddr_in));
 	if (X != 0) {
 		if (errno == EADDRINUSE) {
 			throw c_NetError("Unable to bind socket -- Specified Address In-Use!", ERR_MED);
@@ -191,7 +190,7 @@ const int& c_BaseSocket::r_getOperatingSocket() const noexcept {
 }
 bool c_BaseSocket::receive(char* i_bufferTo, u16 i_bufferSize) {
 	if (!this->mv_bound || !this->mv_initialized) return 0;
-	int readData = recv(this->mv_operateSocket, i_bufferTo, i_bufferSize, 0);
+	int readData = Clib::recv(this->mv_operateSocket, i_bufferTo, i_bufferSize, 0);
 	if (readData == 0) return 0;
 	if (readData < 0) {
 		if ((errno == EAGAIN) || (errno == EWOULDBLOCK)) {
@@ -229,7 +228,7 @@ c_Socket_UDP::c_Socket_UDP(u16 i_port, ConnWait i_waitForConn) {
 	c_IPv4Addr autoBack;
 	mv_address = autoBack;
 	
-	int X = socket(AF_INET, SOCK_DGRAM, 0);
+	int X = Clib::socket(AF_INET, Clib::SOCK_DGRAM, 0);
 	if (X <= 0) {
 		if (errno == EAFNOSUPPORT) {
 			throw c_NetError("Unable to establish UDP socket -- Address Not Supported!", ERR_FTL);
@@ -251,8 +250,8 @@ c_Socket_UDP::c_Socket_UDP(u16 i_port, ConnWait i_waitForConn) {
 	mv_waitConnect = i_waitForConn;
 	
 	if (i_waitForConn == NO_WAIT) {
-		mv_oldSocketFlags = fcntl(mv_baseSocketDesc, F_GETFL, 0);
-		fcntl(mv_baseSocketDesc, F_SETFL, mv_oldSocketFlags | O_NONBLOCK);
+		mv_oldSocketFlags = Clib::fcntl(mv_baseSocketDesc, F_GETFL, 0);
+		Clib::fcntl(mv_baseSocketDesc, F_SETFL, mv_oldSocketFlags | O_NONBLOCK);
 	}
 	mv_initialized = 1;
 	bindAndConfigure();
@@ -263,7 +262,7 @@ c_Socket_UDP::c_Socket_UDP(c_IPv4Addr i_overAddr, u16 i_port, ConnWait i_waitFor
 	mv_socketPort = i_port;
 	mv_address = i_overAddr;
 	
-	int X = socket(AF_INET, SOCK_DGRAM, 0);
+	int X = Clib::socket(AF_INET, Clib::SOCK_DGRAM, 0);
 	if (X <= 0) {
 		if (errno == EAFNOSUPPORT) {
 			throw c_NetError("Unable to establish UDP socket -- Address Not Supported!", ERR_FTL);
@@ -285,8 +284,8 @@ c_Socket_UDP::c_Socket_UDP(c_IPv4Addr i_overAddr, u16 i_port, ConnWait i_waitFor
 	mv_waitConnect = i_waitForConn;
 	
 	if (i_waitForConn == NO_WAIT) {
-		mv_oldSocketFlags = fcntl(mv_baseSocketDesc, F_GETFL, 0);
-		fcntl(mv_baseSocketDesc, F_SETFL, mv_oldSocketFlags | O_NONBLOCK);
+		mv_oldSocketFlags = Clib::fcntl(mv_baseSocketDesc, F_GETFL, 0);
+		Clib::fcntl(mv_baseSocketDesc, F_SETFL, mv_oldSocketFlags | O_NONBLOCK);
 	}
 	mv_initialized = 1;
 	bindAndConfigure();
@@ -297,10 +296,10 @@ c_Socket_UDP::~c_Socket_UDP() {
 	this->deleteDescriptor();
 }
 bool c_Socket_UDP::receiveWithAddr(char* i_bufferTo, u16 i_bufferSize, c_IPv4Addr* ip_addressTo, u16* ip_portTo) {
-	sockaddr_in tempbruh; unsigned int bruhSize = sizeof(tempbruh);
+	Clib::sockaddr_in tempbruh; unsigned int bruhSize = sizeof(tempbruh);
 	if (!this->mv_bound || !this->mv_initialized) return 0;
 	
-	int readStatus = recvfrom(this->mv_operateSocket, i_bufferTo, i_bufferSize, 0, (sockaddr*)&tempbruh, &bruhSize);
+	int readStatus = Clib::recvfrom(this->mv_operateSocket, i_bufferTo, i_bufferSize, 0, (Clib::sockaddr*)&tempbruh, &bruhSize);
 	
 	if (readStatus == 0) return 0;
 	if (readStatus < 0) {
@@ -329,8 +328,8 @@ bool c_Socket_UDP::receiveWithAddr(char* i_bufferTo, u16 i_bufferSize, c_IPv4Add
 		}
 	}
 	
-	*ip_portTo = ntohs(tempbruh.sin_port);
-	u32 B = ntohl(tempbruh.sin_addr.s_addr);
+	*ip_portTo = Clib::ntohs(tempbruh.sin_port);
+	u32 B = Clib::ntohl(tempbruh.sin_addr.s_addr);
 	u8 nA = u8(B >> 24), nB = u8(B >> 16), nC = u8(B >> 8), nD = u8(B);
 	c_IPv4Addr newer(nA, nB, nC, nD);
 	*ip_addressTo = newer;
@@ -339,9 +338,9 @@ bool c_Socket_UDP::receiveWithAddr(char* i_bufferTo, u16 i_bufferSize, c_IPv4Add
 u32 c_Socket_UDP::transmit(char* i_bufferFrom, u16 i_bufferSize, bool i_endOfRecord, c_IPv4Addr i_addressTo, u16 i_portTo) {
 	if (!this->mv_bound || !this->mv_initialized) throw c_NetError("Unable to transmit UDP data -- System not ready!", ERR_MED);
 	
-	sockaddr_in fullRec = i_addressTo.makeCSocket(i_portTo);
+	Clib::sockaddr_in fullRec = i_addressTo.makeCSocket(i_portTo);
 	
-	u32 result = sendto(this->mv_operateSocket, i_bufferFrom, i_bufferSize, (i_endOfRecord) ? MSG_EOR : 0, (sockaddr*)&fullRec, sizeof(fullRec));
+	u32 result = Clib::sendto(this->mv_operateSocket, i_bufferFrom, i_bufferSize, (i_endOfRecord) ? Clib::MSG_EOR : 0, (Clib::sockaddr*)&fullRec, sizeof(fullRec));
 	if (result == i_bufferSize) return i_bufferSize;
 	if ((errno == EAGAIN) || (errno == EWOULDBLOCK)) {
 		return 0;
@@ -375,7 +374,7 @@ c_Socket_TCP::c_Socket_TCP(u16 i_port, ConnWait i_waitForConn, TCPSetup i_setupM
 	c_IPv4Addr autoBack;
 	mv_address = autoBack;
 	
-	int X = socket(AF_INET, SOCK_STREAM, 0);
+	int X = Clib::socket(AF_INET, Clib::SOCK_STREAM, 0);
 	if (X <= 0) {
 		if (errno == EAFNOSUPPORT) {
 			throw c_NetError("Unable to establish TCP socket -- Address Not Supported!", ERR_FTL);
@@ -397,8 +396,8 @@ c_Socket_TCP::c_Socket_TCP(u16 i_port, ConnWait i_waitForConn, TCPSetup i_setupM
 	mv_waitConnect = i_waitForConn;
 	
 	if (i_waitForConn == NO_WAIT) {
-		mv_oldSocketFlags = fcntl(mv_baseSocketDesc, F_GETFL, 0);
-		fcntl(mv_baseSocketDesc, F_SETFL, mv_oldSocketFlags | O_NONBLOCK);
+		mv_oldSocketFlags = Clib::fcntl(mv_baseSocketDesc, F_GETFL, 0);
+		Clib::fcntl(mv_baseSocketDesc, F_SETFL, mv_oldSocketFlags | O_NONBLOCK);
 	}
 	mv_initialized = 1;
 	
@@ -407,7 +406,7 @@ c_Socket_TCP::c_Socket_TCP(u16 i_port, ConnWait i_waitForConn, TCPSetup i_setupM
 	m_baseMode = i_setupMode;
 	
 	if (i_setupMode == TCP_SETUP_LISTEN) {
-		int X = listen(mv_baseSocketDesc, 3);
+		int X = Clib::listen(mv_baseSocketDesc, 3);
 		
 		if (X != 0) {
 			if ((errno == EBADF) && (errno == ENOTSOCK)) {
@@ -428,7 +427,7 @@ c_Socket_TCP::c_Socket_TCP(c_IPv4Addr i_overAddr, u16 i_port, ConnWait i_waitFor
 	mv_socketPort = i_port;
 	mv_address = i_overAddr;
 	
-	int X = socket(AF_INET, SOCK_STREAM, 0);
+	int X = Clib::socket(AF_INET, Clib::SOCK_STREAM, 0);
 	if (X <= 0) {
 		if (errno == EAFNOSUPPORT) {
 			throw c_NetError("Unable to establish TCP socket -- Address Not Supported!", ERR_FTL);
@@ -450,8 +449,8 @@ c_Socket_TCP::c_Socket_TCP(c_IPv4Addr i_overAddr, u16 i_port, ConnWait i_waitFor
 	mv_waitConnect = i_waitForConn;
 	
 	if (i_waitForConn == NO_WAIT) {
-		mv_oldSocketFlags = fcntl(mv_baseSocketDesc, F_GETFL, 0);
-		fcntl(mv_baseSocketDesc, F_SETFL, mv_oldSocketFlags | O_NONBLOCK);
+		mv_oldSocketFlags = Clib::fcntl(mv_baseSocketDesc, F_GETFL, 0);
+		Clib::fcntl(mv_baseSocketDesc, F_SETFL, mv_oldSocketFlags | O_NONBLOCK);
 	}
 	mv_initialized = 1;
 	
@@ -459,7 +458,7 @@ c_Socket_TCP::c_Socket_TCP(c_IPv4Addr i_overAddr, u16 i_port, ConnWait i_waitFor
 	
 	m_baseMode = i_setupMode;
 	if (i_setupMode == TCP_SETUP_LISTEN) {
-		int X = listen(mv_baseSocketDesc, 3);
+		int X = Clib::listen(mv_baseSocketDesc, 3);
 		
 		if (X != 0) {
 			if ((errno == EBADF) && (errno == ENOTSOCK)) {
@@ -483,7 +482,7 @@ bool c_Socket_TCP::connectionAccept() {
 	if (this->m_baseMode != TCP_SETUP_LISTEN) throw c_NetError("Unable to accept connection -- IOSocket not in TCP Listening mode!", ERR_MIN);
 	
 	unsigned int leneg = sizeof(this->mv_cSocket);
-	int X = accept(this->mv_baseSocketDesc, (sockaddr*)&this->mv_cSocket, (socklen_t*)&leneg);
+	int X = Clib::accept(this->mv_baseSocketDesc, (Clib::sockaddr*)&this->mv_cSocket, (Clib::socklen_t*)&leneg);
 	
 	if (X <= 0) {
 		if ((errno == EAGAIN) || (errno == EWOULDBLOCK)) {
@@ -511,8 +510,8 @@ bool c_Socket_TCP::connectionAccept() {
 bool c_Socket_TCP::connectionEstablish(c_IPv4Addr i_client, u16 i_port) {
 	if (this->m_baseMode != TCP_SETUP_CONNECT) throw c_NetError("Unable to establish connection -- IOSocket not in TCP Connect mode!", ERR_MIN);
 	
-	sockaddr_in tmpgoo = i_client.makeCSocket(i_port);
-	int X = connect(this->mv_baseSocketDesc, (sockaddr*)&tmpgoo, sizeof(tmpgoo));
+	Clib::sockaddr_in tmpgoo = i_client.makeCSocket(i_port);
+	int X = Clib::connect(this->mv_baseSocketDesc, (Clib::sockaddr*)&tmpgoo, sizeof(tmpgoo));
 	
 	if (X != 0) {
 		if (errno == EADDRNOTAVAIL) {
@@ -551,9 +550,9 @@ bool c_Socket_TCP::connectionEstablish(c_IPv4Addr i_client, u16 i_port) {
 bool c_Socket_TCP::getClientInfo(c_IPv4Addr* ip_addr, u16* ip_port) {
 	if (!this->m_connected) return 0;
 	
-	sockaddr_in bruh; unsigned int bruhSize = sizeof(bruh);
+	Clib::sockaddr_in bruh; unsigned int bruhSize = sizeof(bruh);
 	
-	int gval = getpeername(this->mv_operateSocket, (sockaddr*)&bruh, &bruhSize);
+	int gval = Clib::getpeername(this->mv_operateSocket, (Clib::sockaddr*)&bruh, &bruhSize);
 	if (gval < 0) {
 		if ((errno == EBADF) || (errno == ENOTSOCK)) {
 			throw c_NetError("Unable to get peer data -- Socket Invalid!", ERR_MED);
@@ -568,8 +567,8 @@ bool c_Socket_TCP::getClientInfo(c_IPv4Addr* ip_addr, u16* ip_port) {
 		}
 	}
 	
-	*ip_port = ntohs(bruh.sin_port);
-	u32 B = ntohl(bruh.sin_addr.s_addr);
+	*ip_port = Clib::ntohs(bruh.sin_port);
+	u32 B = Clib::ntohl(bruh.sin_addr.s_addr);
 	u8 nA = u8(B >> 24), nB = u8(B >> 16), nC = u8(B >> 8), nD = u8(B);
 	c_IPv4Addr newer(nA, nB, nC, nD);
 	*ip_addr = newer;
@@ -578,7 +577,7 @@ bool c_Socket_TCP::getClientInfo(c_IPv4Addr* ip_addr, u16* ip_port) {
 u32 c_Socket_TCP::transmit(char* i_bufferFrom, u16 i_bufferSize, bool i_endOfRecord) {
 	if (!this->m_connected) throw c_NetError("Unable to transmit TCP data -- Not connected!", ERR_MIN);
 	
-	u32 result = send(this->mv_operateSocket, i_bufferFrom, i_bufferSize, (i_endOfRecord) ? MSG_EOR : 0);
+	u32 result = Clib::send(this->mv_operateSocket, i_bufferFrom, i_bufferSize, (i_endOfRecord) ? Clib::MSG_EOR : 0);
 	if (result == i_bufferSize) return i_bufferSize;
 	if ((errno == EAGAIN) || (errno == EWOULDBLOCK)) {
 		return 0;
@@ -618,7 +617,7 @@ c_TCP_Server::c_TCP_Server(u16 i_port, short i_clients) : m_maxClients(i_clients
 	
 	if (i_clients <= 0) throw c_NetError("Cannot establish a server with " + std::to_string(i_clients) + " clients!", ERR_FTL);
 	
-	int X = socket(AF_INET, SOCK_STREAM, 0);
+	int X = Clib::socket(AF_INET, Clib::SOCK_STREAM, 0);
 	if (X <= 0) {
 		if (errno == EAFNOSUPPORT) {
 			throw c_NetError("Unable to establish TCP socket -- Address Not Supported!", ERR_FTL);
@@ -639,8 +638,8 @@ c_TCP_Server::c_TCP_Server(u16 i_port, short i_clients) : m_maxClients(i_clients
 	m_masterSocket = X;
 	
 	int tmpOpt = 1;
-	X = setsockopt(m_masterSocket, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT | SO_KEEPALIVE, &tmpOpt, sizeof(tmpOpt));
-	if (X != 0){
+	X = Clib::setsockopt(m_masterSocket, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT | SO_KEEPALIVE, &tmpOpt, sizeof(tmpOpt));
+	if (X != 0) {
 		if (errno == EBADF) {
 			throw c_NetError("Unable to configure unbound socket -- Unknown Socket Error!", ERR_FTL);
 		} else if (errno == EDOM) {
@@ -660,10 +659,10 @@ c_TCP_Server::c_TCP_Server(u16 i_port, short i_clients) : m_maxClients(i_clients
 		}
 	}
 		
-	int oFlags = fcntl(m_masterSocket, F_GETFL, 0);
-	fcntl(m_masterSocket, F_SETFL, oFlags | O_NONBLOCK);
+	int oFlags = Clib::fcntl(m_masterSocket, F_GETFL, 0);
+	Clib::fcntl(m_masterSocket, F_SETFL, oFlags | O_NONBLOCK);
 
-	X = bind(m_masterSocket, (sockaddr*)&m_cSocket, sizeof(m_cSocket));
+	X = Clib::bind(m_masterSocket, (Clib::sockaddr*)&m_cSocket, sizeof(m_cSocket));
 	if (X != 0) {
 		if (errno == EADDRINUSE) {
 			throw c_NetError("Unable to bind socket -- Specified Address In-Use!", ERR_MED);
@@ -689,7 +688,7 @@ c_TCP_Server::c_TCP_Server(u16 i_port, short i_clients) : m_maxClients(i_clients
 		c_TCP_Subsock xFile(m_masterSocket);
 		m_cliSocks.push_back(xFile);
 	}
-	X = listen(m_masterSocket, 6); // up to 6 pending connections
+	X = Clib::listen(m_masterSocket, 6); // up to 6 pending connections
 	if (X != 0) {
 		if ((errno == EBADF) && (errno == ENOTSOCK)) {
 			throw c_NetError("Unable to open bound socket for listening -- Socket Invalid!", ERR_LOW);
@@ -712,7 +711,7 @@ c_TCP_Server::c_TCP_Server(c_IPv4Addr i_overAddr, u16 i_port, short i_clients) :
 	if (i_clients <= 0) throw c_NetError("Cannot establish a server with " + std::to_string(i_clients) + " clients!", ERR_FTL);
 	
 	
-	int X = socket(AF_INET, SOCK_STREAM, 0);
+	int X = Clib::socket(AF_INET, Clib::SOCK_STREAM, 0);
 	if (X <= 0) {
 		if (errno == EAFNOSUPPORT) {
 			throw c_NetError("Unable to establish TCP socket -- Address Not Supported!", ERR_FTL);
@@ -733,7 +732,7 @@ c_TCP_Server::c_TCP_Server(c_IPv4Addr i_overAddr, u16 i_port, short i_clients) :
 	m_masterSocket = X;
 	
 	int tmpOpt = 1;
-	X = setsockopt(m_masterSocket, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT | SO_KEEPALIVE, &tmpOpt, sizeof(tmpOpt));
+	X = Clib::setsockopt(m_masterSocket, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT | SO_KEEPALIVE, &tmpOpt, sizeof(tmpOpt));
 	if (X != 0){
 		if (errno == EBADF) {
 			throw c_NetError("Unable to configure unbound socket -- Unknown Socket Error!", ERR_FTL);
@@ -753,7 +752,7 @@ c_TCP_Server::c_TCP_Server(c_IPv4Addr i_overAddr, u16 i_port, short i_clients) :
 			throw c_NetError("Unable to configure unbound socket -- Unknown Failure (" + std::to_string(errno) + ')', ERR_FTL);
 		}
 	}
-	X = bind(m_masterSocket, (sockaddr*)&m_cSocket, sizeof(m_cSocket));
+	X = Clib::bind(m_masterSocket, (Clib::sockaddr*)&m_cSocket, sizeof(m_cSocket));
 	if (X != 0) {
 		if (errno == EADDRINUSE) {
 			throw c_NetError("Unable to bind socket -- Specified Address In-Use!", ERR_MED);
@@ -779,7 +778,7 @@ c_TCP_Server::c_TCP_Server(c_IPv4Addr i_overAddr, u16 i_port, short i_clients) :
 		c_TCP_Subsock xFile(m_masterSocket);
 		m_cliSocks.push_back(xFile);
 	}
-	X = listen(m_masterSocket, 6); // up to 6 other connections
+	X = Clib::listen(m_masterSocket, 6); // up to 6 other connections
 	if (X != 0) {
 		if ((errno == EBADF) && (errno == ENOTSOCK)) {
 			throw c_NetError("Unable to open bound socket for listening -- Socket Invalid!", ERR_LOW);
@@ -840,7 +839,7 @@ const std::vector<short> c_TCP_Server::singleLoopOp() {
 			int X = 1;
 			
 			do {
-				X = accept(this->m_masterSocket, (sockaddr*)&this->m_cSocket, (socklen_t*)&xsize);
+				X = Clib::accept(this->m_masterSocket, (Clib::sockaddr*)&this->m_cSocket, (Clib::socklen_t*)&xsize);
 				if (X <= 0) {
 					if ((errno == EAGAIN) || (errno == EWOULDBLOCK)) {
 						break; //Nobody wants to connect :(
@@ -873,7 +872,7 @@ const std::vector<short> c_TCP_Server::singleLoopOp() {
 					} else if (i == u16(this->m_maxClients)) {
 						throw c_NetError("Too many clients connected to server!", ERR_MED);
 					}
-					usleep(1); //Wait one microsecond
+					Clib::usleep(1); //Wait one microsecond
 				}
 			} while (X < 0);
 			//Loops through as many connections as we have pending
@@ -884,7 +883,7 @@ const std::vector<short> c_TCP_Server::singleLoopOp() {
 			if (FD_ISSET(sd, &this->m_fdHandler) && this->m_cliSocks.at(i).m_connected) {
 				statusVec.push_back(i);
 			}
-			usleep(1); //Wait one microsecond inbetween checks
+			Clib::usleep(1); //Wait one microsecond inbetween checks
 		}
 	}
 	return statusVec;
@@ -902,8 +901,8 @@ const c_IPv4Addr c_TCP_Server::getSubsockClient(short i_socket) const {
 	
 	auto sub = &this->m_cliSocks[i_socket];
 	
-	sockaddr_in X; unsigned int xSize = sizeof(X);
-	int gval = getpeername(sub->m_opDesc, (sockaddr*)&X, &xSize);
+	Clib::sockaddr_in X; unsigned int xSize = sizeof(X);
+	int gval = Clib::getpeername(sub->m_opDesc, (Clib::sockaddr*)&X, &xSize);
 	if (gval < 0) {
 		if ((errno == EBADF) || (errno == ENOTSOCK)) {
 			throw c_NetError("Unable to get peer data -- Socket Invalid!", ERR_MED);
@@ -918,7 +917,7 @@ const c_IPv4Addr c_TCP_Server::getSubsockClient(short i_socket) const {
 		}
 	}
 
-	u32 B = ntohl(X.sin_addr.s_addr);
+	u32 B = Clib::ntohl(X.sin_addr.s_addr);
 	u8 nA = u8(B >> 24), nB = u8(B >> 16), nC = u8(B >> 8), nD = u8(B);
 	c_IPv4Addr newer(nA, nB, nC, nD);
 	return newer;
@@ -929,7 +928,7 @@ const bool c_TCP_Server::receiveOnSubsock(short i_socket, char* ip_buff, u16 i_b
 	
 	auto subsockPtr = &this->m_cliSocks[i_socket];
 	
-	int readData = recv(subsockPtr->m_opDesc, ip_buff, i_buffSize, 0);
+	int readData = Clib::recv(subsockPtr->m_opDesc, ip_buff, i_buffSize, 0);
 	
 	if (readData == 0) return 0;
 	if (readData < 0) {
@@ -962,7 +961,7 @@ const u32 c_TCP_Server::transmitOnSubsock(short i_socket, char* ip_buff, u16 i_b
 	
 	auto subsockPtr = &this->m_cliSocks[i_socket];
 
-	int result = send(subsockPtr->m_opDesc, ip_buff, i_buffSize, (i_eor) ? MSG_EOR : 0);
+	int result = Clib::send(subsockPtr->m_opDesc, ip_buff, i_buffSize, (i_eor) ? Clib::MSG_EOR : 0);
 	
 	if (result == int(i_buffSize)) return i_buffSize;
 	if ((errno == EAGAIN) || (errno == EWOULDBLOCK)) {
@@ -992,8 +991,8 @@ const u32 c_TCP_Server::transmitOnSubsock(short i_socket, char* ip_buff, u16 i_b
 const bool c_TCP_Server::shutdownSubsock(short i_socket) {
 	if (!this->isSubsockConnected(i_socket)) return 0;
 	auto X = &this->m_cliSocks[i_socket];
-	shutdown(X->m_opDesc, SHUT_RDWR);
-	close(X->m_opDesc);
+	Clib::shutdown(X->m_opDesc, Clib::SHUT_RDWR);
+	Clib::close(X->m_opDesc);
 	X->m_connected = 0; X->m_opDesc = 0;
 	this->m_currentClients--;
 	return 1;
@@ -1003,8 +1002,8 @@ const bool c_TCP_Server::shutdownServer() {
 	for (u16 i=0; i<u16(this->m_maxClients); i++) {
 		this->shutdownSubsock(i);
 	}
-	shutdown(this->m_masterSocket, SHUT_RDWR);
-	close(this->m_masterSocket);
+	Clib::shutdown(this->m_masterSocket, Clib::SHUT_RDWR);
+	Clib::close(this->m_masterSocket);
 	this->m_masterSocket = 0;
 	this->m_masterPrep = 0;
 	FD_ZERO(&this->m_fdHandler);

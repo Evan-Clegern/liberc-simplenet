@@ -865,6 +865,7 @@ const std::vector<short> c_TCP_Server::singleLoopOp() {
 					if (this->m_cliSocks[i].m_connected == 0) {
 						this->m_cliSocks[i].m_opDesc = X;
 						this->m_cliSocks[i].m_connected = 1;
+						this->m_currentClients++;
 						
 						statusVec.push_back(i * -1);
 					}
@@ -989,6 +990,7 @@ const bool c_TCP_Server::shutdownSubsock(short i_socket) {
 	shutdown(X->m_opDesc, SHUT_RDWR);
 	close(X->m_opDesc);
 	X->m_connected = 0; X->m_opDesc = 0;
+	this->m_currentClients--;
 	return 1;
 }
 const bool c_TCP_Server::shutdownServer() {

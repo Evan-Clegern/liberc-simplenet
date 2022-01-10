@@ -1,7 +1,7 @@
 #ifndef ERCLIB_Networker
 #define ERCLIB_Networker
 
-#include <cstdlib>
+#include <exception>
 #include <iostream>
 #include <ctime>
 #include <string>
@@ -86,13 +86,13 @@ typedef enum : u8 {
 std::string errLvlTxt(ErrorLevel level);
 
 //! Exception class for the networking library.
-class c_NetError {
+class c_NetError : public std::exception {
 	std::string m_about;
 	ErrorLevel m_severity;
 public:
 	explicit c_NetError(const char* text, const ErrorLevel level);
 	explicit c_NetError(const std::string text, const ErrorLevel level);
-	const std::string what() const noexcept;
+	const char* what() const noexcept;
 	const ErrorLevel getLevel() const noexcept;
 	const std::string fullWhat() const noexcept;
 };
@@ -177,7 +177,7 @@ public:
 //! Contains basic information for a Subsocket.
 struct c_TCP_Subsock {
 	int& m_mainDesc, m_opDesc=0;
-	bool m_connected=0;
+	bool m_connected=false;
 	
 	explicit c_TCP_Subsock(int& i_descriptor);
 };
@@ -208,7 +208,6 @@ public:
 	//! Function intended to be run FIRST in a loop.
 	//! Returns a zero-length vector if nothing happened,
 	//! Otherwise, returns a vector of sockets. Positive --> Waiting; Negative --> New.
-	
 	const std::vector<short> singleLoopOp();
 	
 	const bool subsockExists(short i_socket) const noexcept;

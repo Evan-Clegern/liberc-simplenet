@@ -28,13 +28,13 @@ int main() {
 					}
 				}
 			} else {
-				std::cout << "No client changes recorded.\n" << std::flush;
-				Clib::usleep(500000);
+				Clib::usleep(250000); //0.25s
 			}
 			Clib::usleep(2);
 		}
-	} catch (std::exception B) {
-		std::cerr << B.what();
+	} catch (std::exception* B) {
+		std::cerr << B->what();
 		return 1;
 	}
+	return 0;
 }

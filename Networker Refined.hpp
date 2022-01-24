@@ -1,6 +1,13 @@
 #ifndef ERCLIB_Networker
 #define ERCLIB_Networker
 
+//Comment this line out if you want to gamble with std::uint_fast*_t types
+#define EXPLICIT_UINT_SIZES
+
+//Comment this line out if you want to enable a lot of debug messages
+#define DISABLE_DEBUG_MESSAGES
+
+
 #include <exception>
 #include <iostream>
 #include <ctime>
@@ -10,21 +17,28 @@
 #include <cerrno>
 
 
-typedef std::uint_fast32_t u32;
-typedef std::uint_fast16_t u16;
+#ifdef EXPLICIT_UINT_SIZES
+	typedef unsigned short u16;
+	typedef unsigned char u8;
+	typedef unsigned long int u32;
+#else
+	typedef std::uint_fast16_t u16;
+	typedef std::uint_fast8_t  u8;
+	typedef std::uint_fast32_t u32;
+#endif
+
 typedef std::uint_fast64_t u64;
-typedef std::uint_fast8_t  u8;
 
 
 namespace ERCLIB { namespace Net {
 
 namespace Clib {
-// Networking Headers
+// Networking and System Headers
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <fcntl.h> // for nonblocking mode
-#include <unistd.h> // for closing descriptors, apparently
+#include <unistd.h> // for closing descriptors, apparently, as well as sleep
 #include <sys/time.h>
 }
 
@@ -94,9 +108,9 @@ class c_NetError : public std::exception {
 public:
 	explicit c_NetError(const char* text, const ErrorLevel level);
 	explicit c_NetError(const std::string text, const ErrorLevel level);
-	const char* what() const noexcept;
-	const ErrorLevel getLevel() const noexcept;
-	const std::string fullWhat() const noexcept;
+	virtual const char* what() const noexcept;
+	virtual const ErrorLevel getLevel() const noexcept;
+	virtual const std::string fullWhat() const noexcept;
 };
 
 

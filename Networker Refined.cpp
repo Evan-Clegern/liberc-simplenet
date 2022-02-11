@@ -109,10 +109,12 @@ void c_BaseSocket::deleteDescriptor() {
 	if (this->mv_bound) {
 		Clib::shutdown(this->mv_baseSocketDesc, Clib::SHUT_RDWR);
 		#ifndef DISABLE_DEBUG_MESSAGES
-			std::timespec TIMEN; std::timespec_get(&TIMEN, TIME_UTC); char BUFF[64];  
-			std::strftime(BUFF, 64, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
+			std::timespec TIMEN; std::timespec_get(&TIMEN, TIME_UTC); char BUFF[80] /* Prevent overflow */;  
+			std::strftime(BUFF, 79, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
 			std::cout << '[' << BUFF << '.' << TIMEN.tv_nsec << "] Shutdown a bound socket descriptor connection.\n" << std::flush;
 		#endif
+
+
 	}
 	Clib::close(this->mv_baseSocketDesc);
 	this->mv_baseSocketDesc = 0;
@@ -121,28 +123,34 @@ void c_BaseSocket::deleteDescriptor() {
 void c_BaseSocket::restoreDescriptor() {
 	Clib::fcntl(this->mv_baseSocketDesc, F_SETFL, this->mv_oldSocketFlags);
 	#ifndef DISABLE_DEBUG_MESSAGES
-		std::timespec TIMEN; std::timespec_get(&TIMEN, TIME_UTC); char BUFF[64];  
-		std::strftime(BUFF, 64, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
+		std::timespec TIMEN; std::timespec_get(&TIMEN, TIME_UTC); char BUFF[80] /* Prevent overflow */;  
+		std::strftime(BUFF, 79, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
 		std::cout << '[' << BUFF << '.' << TIMEN.tv_nsec << "] Restored FCNTL flags to socket.\n" << std::flush;
 	#endif
+
+
 }
 
 void c_BaseSocket::bindAndConfigure() {
 	if (this->mv_bound) {
 		#ifndef DISABLE_DEBUG_MESSAGES
-			std::timespec TIMEN; std::timespec_get(&TIMEN, TIME_UTC); char BUFF[64];  
-			std::strftime(BUFF, 64, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
+			std::timespec TIMEN; std::timespec_get(&TIMEN, TIME_UTC); char BUFF[80] /* Prevent overflow */;  
+			std::strftime(BUFF, 79, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
 			std::cout << '[' << BUFF << '.' << TIMEN.tv_nsec << "] Attempted to bind-and-configure a bound socket.\n" << std::flush;
 		#endif
+
+
 		return;
 	}
 	if (!this->mv_initialized) {
 		
 		#ifndef DISABLE_DEBUG_MESSAGES
-			std::timespec TIMEN; std::timespec_get(&TIMEN, TIME_UTC); char BUFF[64];  
-			std::strftime(BUFF, 64, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
+			std::timespec TIMEN; std::timespec_get(&TIMEN, TIME_UTC); char BUFF[80] /* Prevent overflow */;  
+			std::strftime(BUFF, 79, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
 			std::cout << '[' << BUFF << '.' << TIMEN.tv_nsec << "] Attempted to bind-and-configure an invalid/unitialized socket.\n" << std::flush;
 		#endif
+
+
 		throw c_NetError("Unable to configure unbound socket -- Socket Uninitialized!", ERR_FTL);
 	}
 	
@@ -170,10 +178,12 @@ void c_BaseSocket::bindAndConfigure() {
 		}
 	}
 	#ifndef DISABLE_DEBUG_MESSAGES
-		std::timespec TIMEN; std::timespec_get(&TIMEN, TIME_UTC); char BUFF[64];  
-		std::strftime(BUFF, 64, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
+		std::timespec TIMEN; std::timespec_get(&TIMEN, TIME_UTC); char BUFF[80] /* Prevent overflow */;  
+		std::strftime(BUFF, 79, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
 		std::cout << '[' << BUFF << '.' << TIMEN.tv_nsec << "] Configured socket options for unbound socket.\n" << std::flush;
 	#endif
+
+
 	
 	X = Clib::bind(this->mv_baseSocketDesc, (Clib::sockaddr*)&this->mv_cSocket, sizeof(Clib::sockaddr_in));
 	if (X != 0) {
@@ -195,9 +205,11 @@ void c_BaseSocket::bindAndConfigure() {
 	}
 
 	#ifndef DISABLE_DEBUG_MESSAGES
-		std::timespec_get(&TIMEN, TIME_UTC);  std::strftime(BUFF, 64, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
+		std::timespec_get(&TIMEN, TIME_UTC);  std::strftime(BUFF, 79, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
 		std::cout << '[' << BUFF << '.' << TIMEN.tv_nsec << "] Bound socket successfully.\n" << std::flush;
 	#endif
+
+
 	this->mv_bound = 1;
 }
 
@@ -226,16 +238,20 @@ bool c_BaseSocket::receive(char* i_bufferTo, u16 i_bufferSize) {
 	if (!this->mv_bound || !this->mv_initialized) {
 		
 		#ifndef DISABLE_DEBUG_MESSAGES
-			std::timespec TIMEN; std::timespec_get(&TIMEN, TIME_UTC); char BUFF[64];  
-			std::strftime(BUFF, 64, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
+			std::timespec TIMEN; std::timespec_get(&TIMEN, TIME_UTC); char BUFF[80] /* Prevent overflow */;  
+			std::strftime(BUFF, 79, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
 			if (!this->mv_bound) {
 				std::cout << '[' << BUFF << '.' << TIMEN.tv_nsec << "] (DEFAULT) Attempted to receive on an unbound socket.\n" << std::flush;
 			} else {
 				std::cout << '[' << BUFF << '.' << TIMEN.tv_nsec << "] (DEFAULT) Attempted to receive on an invalid socket.\n" << std::flush;
 			}
 		#endif
+
+
 		return 0;
 	}
+	char& X = i_bufferTo[i_bufferSize - 1];
+	X = 0x00; //Manually establish a NULL sentry; also throws a fit if the array is not properly sized
 	int readData = Clib::recv(this->mv_operateSocket, i_bufferTo, i_bufferSize, 0);
 	if (readData == 0) return 0;
 	if (readData < 0) {
@@ -262,10 +278,11 @@ bool c_BaseSocket::receive(char* i_bufferTo, u16 i_bufferSize) {
 		}
 	}
 	#ifndef DISABLE_DEBUG_MESSAGES
-		std::timespec TIMEN; std::timespec_get(&TIMEN, TIME_UTC); char BUFF[64];  
-		std::strftime(BUFF, 64, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
+		std::timespec TIMEN; std::timespec_get(&TIMEN, TIME_UTC); char BUFF[80] /* Prevent overflow */;  
+		std::strftime(BUFF, 79, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
 		std::cout << '[' << BUFF << '.' << TIMEN.tv_nsec << "] (DEFAULT) Received " << readData << " bytes of data on socket.\n" << std::flush;
 	#endif
+
 	return 1;
 }
 void c_BaseSocket::shutdownSocket() {
@@ -280,8 +297,8 @@ c_Socket_UDP::c_Socket_UDP(u16 i_port, ConnWait i_waitForConn) {
 	mv_address = autoBack;
 
 	#ifndef DISABLE_DEBUG_MESSAGES
-		std::timespec TIMEN; std::timespec_get(&TIMEN, TIME_UTC); char BUFF[64];  
-		std::strftime(BUFF, 64, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
+		std::timespec TIMEN; std::timespec_get(&TIMEN, TIME_UTC); char BUFF[80] /* Prevent overflow */;  
+		std::strftime(BUFF, 79, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
 		std::cout << '[' << BUFF << '.' << TIMEN.tv_nsec << "] Initializing a new UDP socket, port " << i_port << " on default address -- ";
 		if (i_waitForConn == DO_WAIT) {
 			std::cout << "DO_WAIT MODE.";
@@ -290,6 +307,8 @@ c_Socket_UDP::c_Socket_UDP(u16 i_port, ConnWait i_waitForConn) {
 		}
 		std::cout << '\n' << std::flush;
 	#endif
+
+
 	int X = Clib::socket(AF_INET, Clib::SOCK_DGRAM, 0);
 	if (X <= 0) {
 		if (errno == EAFNOSUPPORT) {
@@ -325,7 +344,7 @@ c_Socket_UDP::c_Socket_UDP(c_IPv4Addr i_overAddr, u16 i_port, ConnWait i_waitFor
 	mv_address = i_overAddr;
 	
 	#ifndef DISABLE_DEBUG_MESSAGES
-		std::timespec TIMEN; std::timespec_get(&TIMEN, TIME_UTC); char BUFF[64];   std::strftime(BUFF, 64, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
+		std::timespec TIMEN; std::timespec_get(&TIMEN, TIME_UTC); char BUFF[80] /* Prevent overflow */;   std::strftime(BUFF, 79, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
 		std::cout << '[' << BUFF << '.' << TIMEN.tv_nsec << "] Initializing a new UDP socket, port " << i_port << " on address '" <<  i_overAddr.toText() << "' -- ";
 		if (i_waitForConn == DO_WAIT) {
 			std::cout << "DO_WAIT MODE.";
@@ -334,6 +353,8 @@ c_Socket_UDP::c_Socket_UDP(c_IPv4Addr i_overAddr, u16 i_port, ConnWait i_waitFor
 		}
 		std::cout << '\n' << std::flush;
 	#endif
+
+
 
 	int X = Clib::socket(AF_INET, Clib::SOCK_DGRAM, 0);
 	if (X <= 0) {
@@ -372,14 +393,16 @@ bool c_Socket_UDP::receiveWithAddr(char* i_bufferTo, u16 i_bufferSize, c_IPv4Add
 	Clib::sockaddr_in tempbruh; unsigned int bruhSize = sizeof(tempbruh);
 	if (!this->mv_bound || !this->mv_initialized) {
 		#ifndef DISABLE_DEBUG_MESSAGES
-			std::timespec TIMEN; std::timespec_get(&TIMEN, TIME_UTC); char BUFF[64];  
-			std::strftime(BUFF, 64, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
+			std::timespec TIMEN; std::timespec_get(&TIMEN, TIME_UTC); char BUFF[80] /* Prevent overflow */;  
+			std::strftime(BUFF, 79, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
 			if (!this->mv_bound) {
 				std::cout << '[' << BUFF << '.' << TIMEN.tv_nsec << "] (UDP ADDR) Attempted to receive on an unbound socket.\n" << std::flush;
 			} else {
 				std::cout << '[' << BUFF << '.' << TIMEN.tv_nsec << "] (UDP ADDR) Attempted to receive on an invalid socket.\n" << std::flush;
 			}
 		#endif
+
+
 		return 0;
 	}
 	int readStatus = Clib::recvfrom(this->mv_operateSocket, i_bufferTo, i_bufferSize, 0, (Clib::sockaddr*)&tempbruh, &bruhSize);
@@ -388,10 +411,12 @@ bool c_Socket_UDP::receiveWithAddr(char* i_bufferTo, u16 i_bufferSize, c_IPv4Add
 	if (readStatus < 0) {
 		if ((errno == EAGAIN) || (errno == EWOULDBLOCK)) {
 			#ifndef DISABLE_DEBUG_MESSAGES
-				std::timespec TIMEN; std::timespec_get(&TIMEN, TIME_UTC); char BUFF[64];  
-				std::strftime(BUFF, 64, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
+				std::timespec TIMEN; std::timespec_get(&TIMEN, TIME_UTC); char BUFF[80] /* Prevent overflow */;  
+				std::strftime(BUFF, 79, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
 				std::cout << '[' << BUFF << '.' << TIMEN.tv_nsec << "] Could not receive UDP data; no packets pending.\n" << std::flush;
 			#endif
+
+
 			return false; //We aren't waiting for a packet
 		} else if ((errno == EBADF) || (errno == ENOTSOCK)) {
 			throw c_NetError("Unable to receive UDP listen data -- Socket Invalid!", ERR_LOW);
@@ -418,10 +443,12 @@ bool c_Socket_UDP::receiveWithAddr(char* i_bufferTo, u16 i_bufferSize, c_IPv4Add
 	
 	
 	#ifndef DISABLE_DEBUG_MESSAGES
-		std::timespec TIMEN; std::timespec_get(&TIMEN, TIME_UTC); char BUFF[64];  
-		std::strftime(BUFF, 64, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
+		std::timespec TIMEN; std::timespec_get(&TIMEN, TIME_UTC); char BUFF[80] /* Prevent overflow */;  
+		std::strftime(BUFF, 79, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
 		std::cout << '[' << BUFF << '.' << TIMEN.tv_nsec << "] (UDP ADDR) Received " << readStatus << " bytes of data on socket.\n" << std::flush;
 	#endif
+
+
 	
 	*ip_portTo = ntohs(tempbruh.sin_port);
 	u32 B = ntohl(tempbruh.sin_addr.s_addr);
@@ -439,18 +466,22 @@ u32 c_Socket_UDP::transmit(char* i_bufferFrom, u16 i_bufferSize, bool i_endOfRec
 	if (result == i_bufferSize) {
 	
 		#ifndef DISABLE_DEBUG_MESSAGES
-			std::timespec TIMEN; std::timespec_get(&TIMEN, TIME_UTC); char BUFF[64];  
-			std::strftime(BUFF, 64, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
+			std::timespec TIMEN; std::timespec_get(&TIMEN, TIME_UTC); char BUFF[80] /* Prevent overflow */;  
+			std::strftime(BUFF, 79, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
 			std::cout << '[' << BUFF << '.' << TIMEN.tv_nsec << "] Transmitted " << i_bufferSize << " bytes of data on UDP socket to address '" <<  i_addressTo.toText() << "' on port " << i_portTo << ".\n" << std::flush;
 		#endif
+
+
 		return i_bufferSize;
 	}
 	if ((errno == EAGAIN) || (errno == EWOULDBLOCK)) {
 		#ifndef DISABLE_DEBUG_MESSAGES
-			std::timespec TIMEN; std::timespec_get(&TIMEN, TIME_UTC); char BUFF[64];  
-			std::strftime(BUFF, 64, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
+			std::timespec TIMEN; std::timespec_get(&TIMEN, TIME_UTC); char BUFF[80] /* Prevent overflow */;  
+			std::strftime(BUFF, 79, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
 			std::cout << '[' << BUFF << '.' << TIMEN.tv_nsec << "] Could not send UDP data; waiting for an otherwise-blocking operation.\n" << std::flush;
 		#endif
+
+
 		return 0;
 	} else if ((errno == EBADF) || (errno == ENOTSOCK)) {
 		throw c_NetError("Unable to transmit data (UDP) -- Socket Invalid!", ERR_MED);
@@ -466,10 +497,12 @@ u32 c_Socket_UDP::transmit(char* i_bufferFrom, u16 i_bufferSize, bool i_endOfRec
 		throw c_NetError("Unable to transmit data (UDP) -- Operation Interrupted!", ERR_LOW);
 	} else if (errno == EMSGSIZE) {
 		#ifndef DISABLE_DEBUG_MESSAGES
-			std::timespec TIMEN; std::timespec_get(&TIMEN, TIME_UTC); char BUFF[64];  
-			std::strftime(BUFF, 64, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
+			std::timespec TIMEN; std::timespec_get(&TIMEN, TIME_UTC); char BUFF[80] /* Prevent overflow */;  
+			std::strftime(BUFF, 79, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
 			std::cout << '[' << BUFF << '.' << TIMEN.tv_nsec << "] Transmitted " << result << " out of " << i_bufferSize << " bytes of data on UDP socket to address '" <<  i_addressTo.toText() << "' on port " << i_portTo << ".\n" << std::flush;
 		#endif
+
+
 		return result;
 		//throw c_NetError("Unable to transmit data (UDP) -- Too Large!", ERR_MIN);
 	} else if (errno == EOPNOTSUPP) {
@@ -488,8 +521,8 @@ c_Socket_TCP::c_Socket_TCP(u16 i_port, ConnWait i_waitForConn, TCPSetup i_setupM
 	mv_address = autoBack;
 	
 	#ifndef DISABLE_DEBUG_MESSAGES
-		std::timespec TIMEN; std::timespec_get(&TIMEN, TIME_UTC); char BUFF[64];  
-		std::strftime(BUFF, 64, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
+		std::timespec TIMEN; std::timespec_get(&TIMEN, TIME_UTC); char BUFF[80] /* Prevent overflow */;  
+		std::strftime(BUFF, 79, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
 		std::cout << '[' << BUFF << '.' << TIMEN.tv_nsec << "] Initializing a new TCP socket, port " << i_port << " on default address -- ";
 		if (i_waitForConn == DO_WAIT) {
 			std::cout << "DO_WAIT MODE ";
@@ -503,6 +536,8 @@ c_Socket_TCP::c_Socket_TCP(u16 i_port, ConnWait i_waitForConn, TCPSetup i_setupM
 		}
 		std::cout << '\n' << std::flush;
 	#endif
+
+
 	
 	int X = Clib::socket(AF_INET, Clib::SOCK_STREAM, 0);
 	if (X <= 0) {
@@ -558,8 +593,8 @@ c_Socket_TCP::c_Socket_TCP(c_IPv4Addr i_overAddr, u16 i_port, ConnWait i_waitFor
 	mv_address = i_overAddr;
 	
 	#ifndef DISABLE_DEBUG_MESSAGES
-		std::timespec TIMEN; std::timespec_get(&TIMEN, TIME_UTC); char BUFF[64];  
-		std::strftime(BUFF, 64, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
+		std::timespec TIMEN; std::timespec_get(&TIMEN, TIME_UTC); char BUFF[80] /* Prevent overflow */;  
+		std::strftime(BUFF, 79, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
 		std::cout << '[' << BUFF << '.' << TIMEN.tv_nsec << "] Initializing a new TCP socket, port " << i_port << " on address '" << i_overAddr.toText() << "' -- ";
 		if (i_waitForConn = DO_WAIT) {
 			std::cout << "DO_WAIT MODE ";
@@ -573,6 +608,8 @@ c_Socket_TCP::c_Socket_TCP(c_IPv4Addr i_overAddr, u16 i_port, ConnWait i_waitFor
 		}
 		std::cout << '\n' << std::flush;
 	#endif
+
+
 	
 	int X = Clib::socket(AF_INET, Clib::SOCK_STREAM, 0);
 	if (X <= 0) {
@@ -627,16 +664,20 @@ c_Socket_TCP::~c_Socket_TCP() {
 }
 bool c_Socket_TCP::connectionAccept() {
 	#ifndef DISABLE_DEBUG_MESSAGES
-		std::timespec TIMEN; std::timespec_get(&TIMEN, TIME_UTC); char BUFF[64];  
-		std::strftime(BUFF, 64, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
+		std::timespec TIMEN; std::timespec_get(&TIMEN, TIME_UTC); char BUFF[80] /* Prevent overflow */;  
+		std::strftime(BUFF, 79, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
 		std::cout << '[' << BUFF << '.' << TIMEN.tv_nsec << "] Attempting to establish an inbound connection.\n" << std::flush;
 	#endif
+
+
 	if (this->m_baseMode != TCP_SETUP_LISTEN) {
 		#ifndef DISABLE_DEBUG_MESSAGES
-			std::timespec TIMEN; std::timespec_get(&TIMEN, TIME_UTC); char BUFF[64];  
-			std::strftime(BUFF, 64, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
+			std::timespec TIMEN; std::timespec_get(&TIMEN, TIME_UTC); char BUFF[80] /* Prevent overflow */;  
+			std::strftime(BUFF, 79, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
 			std::cout << '[' << BUFF << '.' << TIMEN.tv_nsec << "] Attempted to open a CONNECT mode socket for accepting a connection.\n" << std::flush;
 		#endif
+
+
 		throw c_NetError("Unable to accept connection -- IOSocket not in TCP Listening mode!", ERR_MIN);
 	}
 	
@@ -664,9 +705,11 @@ bool c_Socket_TCP::connectionAccept() {
 	}
 	#ifndef DISABLE_DEBUG_MESSAGES
 		std::timespec_get(&TIMEN, TIME_UTC);
-		std::strftime(BUFF, 64, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
+		std::strftime(BUFF, 79, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
 		std::cout << '[' << BUFF << '.' << TIMEN.tv_nsec << "] Successfully established connection on port.\n" << std::flush;
 	#endif
+
+
 	this->mv_operateSocket = X;
 	this->m_connected = 1;
 	return 1;
@@ -674,20 +717,23 @@ bool c_Socket_TCP::connectionAccept() {
 bool c_Socket_TCP::connectionEstablish(c_IPv4Addr i_client, u16 i_port) {
 	
 	#ifndef DISABLE_DEBUG_MESSAGES
-		std::timespec TIMEN; std::timespec_get(&TIMEN, TIME_UTC); char BUFF[64];  
-		std::strftime(BUFF, 64, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
+		std::timespec TIMEN; std::timespec_get(&TIMEN, TIME_UTC); char BUFF[80] /* Prevent overflow */;  
+		std::strftime(BUFF, 79, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
 		std::cout << '[' << BUFF << '.' << TIMEN.tv_nsec << "] Attempting to establish an outbound connection.\n" << std::flush;
 	#endif
+
+
 	if (this->m_baseMode != TCP_SETUP_CONNECT) {
 		
 		#ifndef DISABLE_DEBUG_MESSAGES
-			std::timespec TIMEN; std::timespec_get(&TIMEN, TIME_UTC); char BUFF[64];  
-			std::strftime(BUFF, 64, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
+			std::timespec TIMEN; std::timespec_get(&TIMEN, TIME_UTC); char BUFF[80] /* Prevent overflow */;  
+			std::strftime(BUFF, 79, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
 			std::cout << '[' << BUFF << '.' << TIMEN.tv_nsec << "] Attempted to open a LISTEN mode socket for creating a connection.\n" << std::flush;
 		#endif
+
+
 		throw c_NetError("Unable to establish connection -- IOSocket not in TCP Connect mode!", ERR_MIN);
 	}
-	
 	Clib::sockaddr_in tmpgoo = i_client.makeCSocket(i_port);
 	int X = Clib::connect(this->mv_baseSocketDesc, (Clib::sockaddr*)&tmpgoo, sizeof(tmpgoo));
 	
@@ -723,9 +769,11 @@ bool c_Socket_TCP::connectionEstablish(c_IPv4Addr i_client, u16 i_port) {
 
 	#ifndef DISABLE_DEBUG_MESSAGES
 		std::timespec_get(&TIMEN, TIME_UTC);
-		std::strftime(BUFF, 64, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
+		std::strftime(BUFF, 79, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
 		std::cout << '[' << BUFF << '.' << TIMEN.tv_nsec << "] Established an outbound TCP connection to " << i_client.toText() << ':' << i_port << ".\n" << std::flush;
-	#endif	
+	#endif
+
+	
 	this->mv_operateSocket = this->mv_baseSocketDesc;
 	this->m_connected = 1;
 	return 1;
@@ -733,10 +781,12 @@ bool c_Socket_TCP::connectionEstablish(c_IPv4Addr i_client, u16 i_port) {
 bool c_Socket_TCP::getClientInfo(c_IPv4Addr* ip_addr, u16* ip_port) {
 	if (!this->m_connected) {
 		#ifndef DISABLE_DEBUG_MESSAGES
-			std::timespec TIMEN; std::timespec_get(&TIMEN, TIME_UTC); char BUFF[64];  
-			std::strftime(BUFF, 64, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
+			std::timespec TIMEN; std::timespec_get(&TIMEN, TIME_UTC); char BUFF[80] /* Prevent overflow */;  
+			std::strftime(BUFF, 79, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
 			std::cout << '[' << BUFF << '.' << TIMEN.tv_nsec << "] Cannot get client info from unconnected socket.\n" << std::flush;
 		#endif
+
+
 		return 0;
 	}
 	
@@ -757,10 +807,12 @@ bool c_Socket_TCP::getClientInfo(c_IPv4Addr* ip_addr, u16* ip_port) {
 		}
 	}
 	#ifndef DISABLE_DEBUG_MESSAGES
-		std::timespec TIMEN; std::timespec_get(&TIMEN, TIME_UTC); char BUFF[64];  
-		std::strftime(BUFF, 64, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
+		std::timespec TIMEN; std::timespec_get(&TIMEN, TIME_UTC); char BUFF[80] /* Prevent overflow */;  
+		std::strftime(BUFF, 79, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
 		std::cout << '[' << BUFF << '.' << TIMEN.tv_nsec << "] Successfully acquired connection client information.\n" << std::flush;
 	#endif
+
+
 	
 	*ip_port = ntohs(bruh.sin_port);
 	u32 B = ntohl(bruh.sin_addr.s_addr);
@@ -772,10 +824,12 @@ bool c_Socket_TCP::getClientInfo(c_IPv4Addr* ip_addr, u16* ip_port) {
 u32 c_Socket_TCP::transmit(char* i_bufferFrom, u16 i_bufferSize, bool i_endOfRecord) {
 	if (!this->m_connected) {
 		#ifndef DISABLE_DEBUG_MESSAGES
-			std::timespec TIMEN; std::timespec_get(&TIMEN, TIME_UTC); char BUFF[64];  
-			std::strftime(BUFF, 64, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
+			std::timespec TIMEN; std::timespec_get(&TIMEN, TIME_UTC); char BUFF[80] /* Prevent overflow */;  
+			std::strftime(BUFF, 79, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
 			std::cout << '[' << BUFF << '.' << TIMEN.tv_nsec << "] Attempted to transmit on unopened connection.\n" << std::flush;
 		#endif
+
+
 		throw c_NetError("Unable to transmit TCP data -- Not connected!", ERR_MIN);
 	}
 	
@@ -783,18 +837,22 @@ u32 c_Socket_TCP::transmit(char* i_bufferFrom, u16 i_bufferSize, bool i_endOfRec
 	if (result == i_bufferSize) {
 		
 		#ifndef DISABLE_DEBUG_MESSAGES
-			std::timespec TIMEN; std::timespec_get(&TIMEN, TIME_UTC); char BUFF[64];  
-			std::strftime(BUFF, 64, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
+			std::timespec TIMEN; std::timespec_get(&TIMEN, TIME_UTC); char BUFF[80] /* Prevent overflow */;  
+			std::strftime(BUFF, 79, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
 			std::cout << '[' << BUFF << '.' << TIMEN.tv_nsec << "] Successfully transmitted " << i_bufferSize << " bytes on TCP connection.\n" << std::flush;
 		#endif
+
+
 		return i_bufferSize;
 	}
 	if ((errno == EAGAIN) || (errno == EWOULDBLOCK)) {
 		#ifndef DISABLE_DEBUG_MESSAGES
-			std::timespec TIMEN; std::timespec_get(&TIMEN, TIME_UTC); char BUFF[64];  
-			std::strftime(BUFF, 64, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
+			std::timespec TIMEN; std::timespec_get(&TIMEN, TIME_UTC); char BUFF[80] /* Prevent overflow */;  
+			std::strftime(BUFF, 79, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
 			std::cout << '[' << BUFF << '.' << TIMEN.tv_nsec << "] Could not send TCP data, waiting for an otherwise-blocking operation.\n" << std::flush;
 		#endif
+
+
 		return 0;
 	} else if ((errno == EBADF) || (errno == ENOTSOCK)) {
 		throw c_NetError("Unable to transmit data (TCP) -- Socket Invalid!", ERR_MED);
@@ -810,10 +868,12 @@ u32 c_Socket_TCP::transmit(char* i_bufferFrom, u16 i_bufferSize, bool i_endOfRec
 		throw c_NetError("Unable to transmit data (TCP) -- Operation Interrupted!", ERR_LOW);
 	} else if (errno == EMSGSIZE) {		
 		#ifndef DISABLE_DEBUG_MESSAGES
-			std::timespec TIMEN; std::timespec_get(&TIMEN, TIME_UTC); char BUFF[64];  
-			std::strftime(BUFF, 64, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
+			std::timespec TIMEN; std::timespec_get(&TIMEN, TIME_UTC); char BUFF[80] /* Prevent overflow */;  
+			std::strftime(BUFF, 79, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
 			std::cout << '[' << BUFF << '.' << TIMEN.tv_nsec << "] Successfully transmitted " << result << " bytes out of " << i_bufferSize << " on TCP connection.\n" << std::flush;
 		#endif
+
+
 		return result;
 		//throw c_NetError("Unable to transmit data (TCP) -- Too Large!", ERR_MIN);
 	} else if (errno == EOPNOTSUPP) {
@@ -831,10 +891,12 @@ c_TCP_Subsock::c_TCP_Subsock(int& i_descriptor) : m_mainDesc(i_descriptor) {};
 
 c_TCP_Server::c_TCP_Server(u16 i_port, short i_clients) : m_maxClients(i_clients) {
 	#ifndef DISABLE_DEBUG_MESSAGES
-		std::timespec TIMEN; std::timespec_get(&TIMEN, TIME_UTC); char BUFF[64];  
-		std::strftime(BUFF, 64, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
+		std::timespec TIMEN; std::timespec_get(&TIMEN, TIME_UTC); char BUFF[80] /* Prevent overflow */;  
+		std::strftime(BUFF, 79, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
 		std::cout << '[' << BUFF << '.' << TIMEN.tv_nsec << "] Attempting to establish a local-address TCP Server, port " << i_port << " with " << i_clients << " max clients.\n" << std::flush;
 	#endif
+
+
 	
 	m_sharedPort = i_port;
 	c_IPv4Addr autoBack;
@@ -864,9 +926,11 @@ c_TCP_Server::c_TCP_Server(u16 i_port, short i_clients) : m_maxClients(i_clients
 	m_masterSocket = X;
 	#ifndef DISABLE_DEBUG_MESSAGES
 		std::timespec_get(&TIMEN, TIME_UTC);
-		std::strftime(BUFF, 64, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
+		std::strftime(BUFF, 79, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
 		std::cout << '[' << BUFF << '.' << TIMEN.tv_nsec << "] Generated master socket for server.\n" << std::flush;
 	#endif
+
+
 	
 	int tmpOpt = 1;
 	X = Clib::setsockopt(m_masterSocket, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT | SO_KEEPALIVE, &tmpOpt, sizeof(tmpOpt));
@@ -891,9 +955,11 @@ c_TCP_Server::c_TCP_Server(u16 i_port, short i_clients) : m_maxClients(i_clients
 	}
 	#ifndef DISABLE_DEBUG_MESSAGES
 		std::timespec_get(&TIMEN, TIME_UTC);
-		std::strftime(BUFF, 64, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
+		std::strftime(BUFF, 79, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
 		std::cout << '[' << BUFF << '.' << TIMEN.tv_nsec << "] Engaged basic configuration on master socket for server.\n" << std::flush;
 	#endif
+
+
 		
 	int oFlags = Clib::fcntl(m_masterSocket, F_GETFL, 0);
 	Clib::fcntl(m_masterSocket, F_SETFL, oFlags | O_NONBLOCK);
@@ -918,18 +984,22 @@ c_TCP_Server::c_TCP_Server(u16 i_port, short i_clients) : m_maxClients(i_clients
 	}
 	#ifndef DISABLE_DEBUG_MESSAGES
 		std::timespec_get(&TIMEN, TIME_UTC);
-		std::strftime(BUFF, 64, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
+		std::strftime(BUFF, 79, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
 		std::cout << '[' << BUFF << '.' << TIMEN.tv_nsec << "] Fully bound master socket for server.\n" << std::flush;
 	#endif
+
+
 	FD_ZERO(&m_fdHandler);
 	FD_SET(m_masterSocket, &m_fdHandler);
 	m_currentMaxFD = m_masterSocket;
 	
 	#ifndef DISABLE_DEBUG_MESSAGES
 		std::timespec_get(&TIMEN, TIME_UTC);
-		std::strftime(BUFF, 64, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
+		std::strftime(BUFF, 79, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
 		std::cout << '[' << BUFF << '.' << TIMEN.tv_nsec << "] Engaged File Descriptor set with master socket for server.\n" << std::flush;
 	#endif
+
+
 	for (short i=0; i<m_maxClients; i++) {
 		c_TCP_Subsock xFile(m_masterSocket);
 		m_cliSocks.push_back(xFile);
@@ -950,17 +1020,21 @@ c_TCP_Server::c_TCP_Server(u16 i_port, short i_clients) : m_maxClients(i_clients
 	}
 	#ifndef DISABLE_DEBUG_MESSAGES
 		std::timespec_get(&TIMEN, TIME_UTC);
-		std::strftime(BUFF, 64, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
+		std::strftime(BUFF, 79, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
 		std::cout << '[' << BUFF << '.' << TIMEN.tv_nsec << "] Opened master socket for listening; server engaged.\n" << std::flush;
 	#endif
+
+
 	m_masterPrep = 1;
 }
 c_TCP_Server::c_TCP_Server(c_IPv4Addr i_overAddr, u16 i_port, short i_clients) : m_maxClients(i_clients) {
 	#ifndef DISABLE_DEBUG_MESSAGES
-		std::timespec TIMEN; std::timespec_get(&TIMEN, TIME_UTC); char BUFF[64];  
-		std::strftime(BUFF, 64, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
+		std::timespec TIMEN; std::timespec_get(&TIMEN, TIME_UTC); char BUFF[80] /* Prevent overflow */;  
+		std::strftime(BUFF, 79, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
 		std::cout << '[' << BUFF << '.' << TIMEN.tv_nsec << "] Attempting to establish a TCP Server, port " << i_port << " with " << i_clients << " max clients on '" << i_overAddr.toText() << "'.\n" << std::flush;
 	#endif
+
+
 	m_sharedPort = i_port;
 	m_baseAddress = i_overAddr;
 	m_cSocket = m_baseAddress.makeCSocket(i_port);
@@ -988,9 +1062,11 @@ c_TCP_Server::c_TCP_Server(c_IPv4Addr i_overAddr, u16 i_port, short i_clients) :
 	m_masterSocket = X;
 	#ifndef DISABLE_DEBUG_MESSAGES
 		std::timespec_get(&TIMEN, TIME_UTC);
-		std::strftime(BUFF, 64, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
+		std::strftime(BUFF, 79, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
 		std::cout << '[' << BUFF << '.' << TIMEN.tv_nsec << "] Generated master socket for server.\n" << std::flush;
 	#endif
+
+
 	
 	int tmpOpt = 1;
 	X = Clib::setsockopt(m_masterSocket, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT | SO_KEEPALIVE, &tmpOpt, sizeof(tmpOpt));
@@ -1015,9 +1091,11 @@ c_TCP_Server::c_TCP_Server(c_IPv4Addr i_overAddr, u16 i_port, short i_clients) :
 	}
 	#ifndef DISABLE_DEBUG_MESSAGES
 		std::timespec_get(&TIMEN, TIME_UTC);
-		std::strftime(BUFF, 64, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
+		std::strftime(BUFF, 79, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
 		std::cout << '[' << BUFF << '.' << TIMEN.tv_nsec << "] Engaged basic configuration on master socket for server.\n" << std::flush;
 	#endif
+
+
 	
 	X = Clib::bind(m_masterSocket, (Clib::sockaddr*)&m_cSocket, sizeof(m_cSocket));
 	if (X != 0) {
@@ -1039,18 +1117,22 @@ c_TCP_Server::c_TCP_Server(c_IPv4Addr i_overAddr, u16 i_port, short i_clients) :
 	}
 	#ifndef DISABLE_DEBUG_MESSAGES
 		std::timespec_get(&TIMEN, TIME_UTC);
-		std::strftime(BUFF, 64, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
+		std::strftime(BUFF, 79, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
 		std::cout << '[' << BUFF << '.' << TIMEN.tv_nsec << "] Fully bound master socket for server.\n" << std::flush;
 	#endif
+
+
 	
 	FD_ZERO(&m_fdHandler);
 	FD_SET(m_masterSocket, &m_fdHandler);
 	m_currentMaxFD = m_masterSocket;
 	#ifndef DISABLE_DEBUG_MESSAGES
 		std::timespec_get(&TIMEN, TIME_UTC);
-		std::strftime(BUFF, 64, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
+		std::strftime(BUFF, 79, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
 		std::cout << '[' << BUFF << '.' << TIMEN.tv_nsec << "] Engaged File Descriptor set with master socket for server.\n" << std::flush;
 	#endif
+
+
 	
 	for (u16 i=0; i<u16(m_maxClients); i++) {
 		c_TCP_Subsock xFile(m_masterSocket);
@@ -1072,9 +1154,11 @@ c_TCP_Server::c_TCP_Server(c_IPv4Addr i_overAddr, u16 i_port, short i_clients) :
 	}
 	#ifndef DISABLE_DEBUG_MESSAGES
 		std::timespec_get(&TIMEN, TIME_UTC);
-		std::strftime(BUFF, 64, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
+		std::strftime(BUFF, 79, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
 		std::cout << '[' << BUFF << '.' << TIMEN.tv_nsec << "] Opened master socket for listening; server engaged.\n" << std::flush;
 	#endif
+
+
 	
 	m_masterPrep = 1;
 }
@@ -1091,10 +1175,12 @@ const c_IPv4Addr c_TCP_Server::getAddressInUse() const noexcept {
 
 const std::vector<short> c_TCP_Server::singleLoopOp() {
 	#ifndef DISABLE_DEBUG_MESSAGES
-		std::timespec TIMEN; std::timespec_get(&TIMEN, TIME_UTC); char BUFF[64];  
-		std::strftime(BUFF, 64, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
+		std::timespec TIMEN; std::timespec_get(&TIMEN, TIME_UTC); char BUFF[80] /* Prevent overflow */;  
+		std::strftime(BUFF, 79, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
 		std::cout << '[' << BUFF << '.' << TIMEN.tv_nsec << "] Engaging a loop operation.\n" << std::flush;
 	#endif
+
+
 	FD_ZERO(&this->m_fdHandler);
 	FD_SET(this->m_masterSocket, &this->m_fdHandler);
 	this->m_currentMaxFD = this->m_masterSocket;
@@ -1117,32 +1203,40 @@ const std::vector<short> c_TCP_Server::singleLoopOp() {
 	if (activity < 0) {
 		#ifndef DISABLE_DEBUG_MESSAGES
 			std::timespec_get(&TIMEN, TIME_UTC);
-			std::strftime(BUFF, 64, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
+			std::strftime(BUFF, 79, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
 			std::cout << '[' << BUFF << '.' << TIMEN.tv_nsec << "] Server loop recorded error state.\n" << std::flush;
 		#endif
+
+
 		if (errno == EINTR) return statusVec;
 		throw c_NetError("Error while trying to wait for activity on server (" + std::to_string(errno) + ')', ERR_SEV);
 	} else if (activity == 0) {
 		
 		#ifndef DISABLE_DEBUG_MESSAGES
 			std::timespec_get(&TIMEN, TIME_UTC);
-			std::strftime(BUFF, 64, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
+			std::strftime(BUFF, 79, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
 			std::cout << '[' << BUFF << '.' << TIMEN.tv_nsec << "] Server loop recorded no changes.\n" << std::flush;
 		#endif
+
+
 		return statusVec; //Nothing happened :(
 	} else {
 		#ifndef DISABLE_DEBUG_MESSAGES
 			std::timespec_get(&TIMEN, TIME_UTC);
-			std::strftime(BUFF, 64, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
+			std::strftime(BUFF, 79, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
 			std::cout << '[' << BUFF << '.' << TIMEN.tv_nsec << "] Server loop recorded changes.\n" << std::flush;
 		#endif
+
+
 		//Something happened!
 		if (FD_ISSET(this->m_masterSocket, &this->m_fdHandler)) {
 			#ifndef DISABLE_DEBUG_MESSAGES
 				std::timespec_get(&TIMEN, TIME_UTC);
-				std::strftime(BUFF, 64, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
+				std::strftime(BUFF, 79, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
 				std::cout << '[' << BUFF << '.' << TIMEN.tv_nsec << "] Server loop detected new inbound connection, assigning.\n" << std::flush;
 			#endif
+
+
 			//New inbound connection
 			auto xsize = sizeof(this->m_cSocket);
 			int X = 1;
@@ -1180,9 +1274,11 @@ const std::vector<short> c_TCP_Server::singleLoopOp() {
 				
 						#ifndef DISABLE_DEBUG_MESSAGES
 							std::timespec_get(&TIMEN, TIME_UTC);
-							std::strftime(BUFF, 64, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
+							std::strftime(BUFF, 79, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
 							std::cout << '[' << BUFF << '.' << TIMEN.tv_nsec << "] Server loop accepted new connection on socket " << i << ".\n" << std::flush;
 						#endif
+
+
 						break; //Escape current level to next X iteration
 					} else if (i == u16(this->m_maxClients)) {
 						throw c_NetError("Too many clients connected to server!", ERR_MED);
@@ -1199,9 +1295,11 @@ const std::vector<short> c_TCP_Server::singleLoopOp() {
 				statusVec.push_back(i);
 				#ifndef DISABLE_DEBUG_MESSAGES
 					std::timespec_get(&TIMEN, TIME_UTC);
-					std::strftime(BUFF, 64, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
+					std::strftime(BUFF, 79, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
 					std::cout << '[' << BUFF << '.' << TIMEN.tv_nsec << "] Server loop recorded message on subsock " << i << ".\n" << std::flush;
 				#endif
+
+
 			}
 			Clib::usleep(1); //Wait one microsecond inbetween checks
 		}
@@ -1247,10 +1345,12 @@ const bool c_TCP_Server::receiveOnSubsock(short i_socket, char* ip_buff, u16 i_b
 	if (!this->isSubsockConnected(i_socket)) {
 		
 		#ifndef DISABLE_DEBUG_MESSAGES
-			std::timespec TIMEN; std::timespec_get(&TIMEN, TIME_UTC); char BUFF[64];
-			std::strftime(BUFF, 64, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
+			std::timespec TIMEN; std::timespec_get(&TIMEN, TIME_UTC); char BUFF[80] /* Prevent overflow */;
+			std::strftime(BUFF, 79, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
 			std::cout << '[' << BUFF << '.' << TIMEN.tv_nsec << "] Cannot receive on Subsock " << i_socket << ".\n" << std::flush;
 		#endif
+
+
 		return false;
 	}
 	
@@ -1263,10 +1363,12 @@ const bool c_TCP_Server::receiveOnSubsock(short i_socket, char* ip_buff, u16 i_b
 		if ((errno == EAGAIN) || (errno == EWOULDBLOCK)) {
 			
 			#ifndef DISABLE_DEBUG_MESSAGES
-				std::timespec TIMEN; std::timespec_get(&TIMEN, TIME_UTC); char BUFF[64];
-				std::strftime(BUFF, 64, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
+				std::timespec TIMEN; std::timespec_get(&TIMEN, TIME_UTC); char BUFF[80] /* Prevent overflow */;
+				std::strftime(BUFF, 79, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
 				std::cout << '[' << BUFF << '.' << TIMEN.tv_nsec << "] Subsock " << i_socket << " has no pending messages.\n" << std::flush;
 			#endif
+
+
 			return false; //We aren't waiting for a packet
 		} else if ((errno == EBADF) || (errno == ENOTSOCK)) {
 			throw c_NetError("Unable to receive listen data -- Socket Invalid!", ERR_LOW);
@@ -1290,19 +1392,23 @@ const bool c_TCP_Server::receiveOnSubsock(short i_socket, char* ip_buff, u16 i_b
 	}
 	
 	#ifndef DISABLE_DEBUG_MESSAGES
-		std::timespec TIMEN; std::timespec_get(&TIMEN, TIME_UTC); char BUFF[64];
-		std::strftime(BUFF, 64, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
+		std::timespec TIMEN; std::timespec_get(&TIMEN, TIME_UTC); char BUFF[80] /* Prevent overflow */;
+		std::strftime(BUFF, 79, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
 		std::cout << '[' << BUFF << '.' << TIMEN.tv_nsec << "] Subsock " << i_socket << " received data.\n" << std::flush;
 	#endif
+
+
 	return 1;
 }
 const u32 c_TCP_Server::transmitOnSubsock(short i_socket, char* ip_buff, u16 i_buffSize, bool i_eor) {
 	if (!this->isSubsockConnected(i_socket)) {
 		#ifndef DISABLE_DEBUG_MESSAGES
-			std::timespec TIMEN; std::timespec_get(&TIMEN, TIME_UTC); char BUFF[64];
-			std::strftime(BUFF, 64, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
+			std::timespec TIMEN; std::timespec_get(&TIMEN, TIME_UTC); char BUFF[80] /* Prevent overflow */;
+			std::strftime(BUFF, 79, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
 			std::cout << '[' << BUFF << '.' << TIMEN.tv_nsec << "] Cannot receive on Subsock " << i_socket << ".\n" << std::flush;
 		#endif
+
+
 		return 0;
 	}
 	
@@ -1312,18 +1418,22 @@ const u32 c_TCP_Server::transmitOnSubsock(short i_socket, char* ip_buff, u16 i_b
 	
 	if (result == int(i_buffSize)) {
 		#ifndef DISABLE_DEBUG_MESSAGES
-			std::timespec TIMEN; std::timespec_get(&TIMEN, TIME_UTC); char BUFF[64];
-			std::strftime(BUFF, 64, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
+			std::timespec TIMEN; std::timespec_get(&TIMEN, TIME_UTC); char BUFF[80] /* Prevent overflow */;
+			std::strftime(BUFF, 79, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
 			std::cout << '[' << BUFF << '.' << TIMEN.tv_nsec << "] Subsock " << i_socket << " successfully transmitted " << result << " bytes.\n" << std::flush;
 		#endif
+
+
 		return i_buffSize;
 	}
 	if ((errno == EAGAIN) || (errno == EWOULDBLOCK)) {
 		#ifndef DISABLE_DEBUG_MESSAGES
-			std::timespec TIMEN; std::timespec_get(&TIMEN, TIME_UTC); char BUFF[64];
-			std::strftime(BUFF, 64, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
+			std::timespec TIMEN; std::timespec_get(&TIMEN, TIME_UTC); char BUFF[80] /* Prevent overflow */;
+			std::strftime(BUFF, 79, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
 			std::cout << '[' << BUFF << '.' << TIMEN.tv_nsec << "] Subsock " << i_socket << " unable to transmit -- operation would block.\n" << std::flush;
 		#endif
+
+
 		return 0;
 	} else if ((errno == EBADF) || (errno == ENOTSOCK)) {
 		throw c_NetError("Unable to transmit data (TCP) -- Socket Invalid!", ERR_MED);
@@ -1339,10 +1449,12 @@ const u32 c_TCP_Server::transmitOnSubsock(short i_socket, char* ip_buff, u16 i_b
 		throw c_NetError("Unable to transmit data (TCP) -- Operation Interrupted!", ERR_LOW);
 	} else if (errno == EMSGSIZE) {
 		#ifndef DISABLE_DEBUG_MESSAGES
-			std::timespec TIMEN; std::timespec_get(&TIMEN, TIME_UTC); char BUFF[64];
-			std::strftime(BUFF, 64, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
+			std::timespec TIMEN; std::timespec_get(&TIMEN, TIME_UTC); char BUFF[80] /* Prevent overflow */;
+			std::strftime(BUFF, 79, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
 			std::cout << '[' << BUFF << '.' << TIMEN.tv_nsec << "] Subsock " << i_socket << " successfully transmitted " << result << " bytes out of " << i_buffSize << ".\n" << std::flush;
 		#endif
+
+
 		return result;
 		//throw c_NetError("Unable to transmit data (TCP) -- Too Large!", ERR_MIN);
 	} else if (errno == EOPNOTSUPP) {
@@ -1355,10 +1467,12 @@ const u32 c_TCP_Server::transmitOnSubsock(short i_socket, char* ip_buff, u16 i_b
 const bool c_TCP_Server::shutdownSubsock(short i_socket) {
 	
 	#ifndef DISABLE_DEBUG_MESSAGES
-		std::timespec TIMEN; std::timespec_get(&TIMEN, TIME_UTC); char BUFF[64];
-		std::strftime(BUFF, 64, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
+		std::timespec TIMEN; std::timespec_get(&TIMEN, TIME_UTC); char BUFF[80] /* Prevent overflow */;
+		std::strftime(BUFF, 79, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
 		std::cout << '[' << BUFF << '.' << TIMEN.tv_nsec << "] Subsock " << i_socket << " shutting down.\n" << std::flush;
 	#endif
+
+
 	if (!this->isSubsockConnected(i_socket)) return 0;
 	auto X = &this->m_cliSocks[i_socket];
 	Clib::shutdown(X->m_opDesc, Clib::SHUT_RDWR);
@@ -1367,27 +1481,33 @@ const bool c_TCP_Server::shutdownSubsock(short i_socket) {
 	this->m_currentClients--;
 	#ifndef DISABLE_DEBUG_MESSAGES
 		std::timespec_get(&TIMEN, TIME_UTC);
-		std::strftime(BUFF, 64, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
+		std::strftime(BUFF, 79, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
 		std::cout << '[' << BUFF << '.' << TIMEN.tv_nsec << "] Subsock " << i_socket << " has been shut down.\n" << std::flush;
 	#endif
+
+
 	return 1;
 }
 const bool c_TCP_Server::shutdownServer() {
 	
 	#ifndef DISABLE_DEBUG_MESSAGES
-		std::timespec TIMEN; std::timespec_get(&TIMEN, TIME_UTC); char BUFF[64];
-		std::strftime(BUFF, 64, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
+		std::timespec TIMEN; std::timespec_get(&TIMEN, TIME_UTC); char BUFF[80] /* Prevent overflow */;
+		std::strftime(BUFF, 79, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
 		std::cout << '[' << BUFF << '.' << TIMEN.tv_nsec << "] Shutting down server.\n" << std::flush;
 	#endif
+
+
 	if (!this->m_masterPrep) return 0;
 	for (u16 i=0; i<u16(this->m_maxClients); i++) {
 		this->shutdownSubsock(i);
 	}
 	#ifndef DISABLE_DEBUG_MESSAGES
 		std::timespec_get(&TIMEN, TIME_UTC);
-		std::strftime(BUFF, 64, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
+		std::strftime(BUFF, 79, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
 		std::cout << '[' << BUFF << '.' << TIMEN.tv_nsec << "] Subsockets have been shut down.\n" << std::flush;
 	#endif
+
+
 	Clib::shutdown(this->m_masterSocket, Clib::SHUT_RDWR);
 	Clib::close(this->m_masterSocket);
 	this->m_masterSocket = 0;
@@ -1395,9 +1515,11 @@ const bool c_TCP_Server::shutdownServer() {
 	FD_ZERO(&this->m_fdHandler);
 	#ifndef DISABLE_DEBUG_MESSAGES
 		std::timespec_get(&TIMEN, TIME_UTC);
-		std::strftime(BUFF, 64, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
+		std::strftime(BUFF, 79, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
 		std::cout << '[' << BUFF << '.' << TIMEN.tv_nsec << "] TCP Server has been shut down.\n" << std::flush;
 	#endif
+
+
 	return 1;
 }
 

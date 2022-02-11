@@ -13,7 +13,6 @@
 #include <ctime>
 #include <string>
 #include <vector>
-#include <cstdint>
 #include <cerrno>
 
 
@@ -21,16 +20,56 @@
 	typedef unsigned short u16;
 	typedef unsigned char u8;
 	typedef unsigned long int u32;
+	typedef unsigned long long int u64;
 #else
+	#include <cstdint>
 	typedef std::uint_fast16_t u16;
 	typedef std::uint_fast8_t  u8;
 	typedef std::uint_fast32_t u32;
+	typedef std::uint_fast64_t u64;
 #endif
 
-typedef std::uint_fast64_t u64;
 
 
 namespace ERCLIB { namespace Net {
+	
+//! For custom use in UDP or TCP, just as a reference
+namespace ControlChars {
+	char CtrlNUL = 0   ; //! NULL byte
+	char CtrlSOH = 1   ; //! Start of Heading
+	char CtrlSTX = 2   ; //! Start of Text
+	char CtrlETX = 3   ; //! End of Text
+	char CtrlEOT = 4   ; //! End of Transmission
+	char CtrlENQ = 5   ; //! Enquiry (for info about other device)
+	char CtrlACK = 6   ; //! Acknowledgement (message received)
+	char CtrlBEL = 7   ; //! Bell (ring ring)
+	char CtrlBS  = 8   ; //! Backspace
+	char CtrlHT  = 9   ; //! Horizontal Tab
+	char CtrlLF  = 10  ; //! Line Feed (*NIX Newline -- MOVe printer down a line)
+	char CtrlVT  = 11  ; //! Vertical Tab (skip a couple lines)
+	char CtrlFF  = 12  ; //! Form Feed (Eject current page -- aka page break)
+	char CtrlCR  = 13  ; //! Carriage Return (macOS Newline -- return print to start of line)
+	char CtrlSO  = 14  ; //! Shift OUT (to different character set)
+	char CtrlSI  = 15  ; //! Shift IN (to original character set)
+	char CtrlDLE = 16  ; //! Data Link Escape (interpret next sequence to be different)
+	char CtrlDC1 = 17  ; //! Device Control 1
+	char CtrlDC2 = 18  ; //! Device Control 2
+	char CtrlDC3 = 19  ; //! Device Control 3
+	char CtrlDC4 = 20  ; //! Device Control 4
+	char CtrlNAK = 21  ; //! Negative Acknowledge (error status acknowledge)
+	char CtrlSYN = 22  ; //! Synchronous Idle (correct sync)
+	char CtrlETB = 23  ; //! End of Transmission Block (end of paragraph or block)
+	char CtrlCAN = 24  ; //! Cancel
+	char CtrlEM  = 25  ; //! End of Medium (Usable portion of writing gone) or EM space (#-pt font --> #-char EM space)
+	char CtrlSUB = 26  ; //! Substitute 
+	char CtrlESC = 27  ; //! Escape (triggers escape sequence if seen in text, sent by ESC key)
+	char CtrlFS  = 28  ; //! File Separator
+	char CtrlGS  = 29  ; //! Group Separator
+	char CtrlRS  = 30  ; //! Record Seperator
+	char CtrlUS  = 31  ; //! Unit Separator
+	char CtrlSP  = 32  ; //! Space
+	char CtrlDEL = 127 ; //! Delete Character (character is deleted, NOT the 'DEL' key)
+}
 
 namespace Clib {
 // Networking and System Headers

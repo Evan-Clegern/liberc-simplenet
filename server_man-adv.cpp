@@ -4,6 +4,7 @@ using namespace ERCLIB::Net;
 
 int main() {
 	try {
+		
 		c_TCP_Server testServer(8100, 4); //Four connections on port 8100
 		
 		while (true) {

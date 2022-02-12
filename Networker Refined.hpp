@@ -8,6 +8,10 @@
 #define DISABLE_DEBUG_MESSAGES
 
 
+#if __cplusplus < 201703L
+	#error
+#endif
+
 #include <exception>
 #include <iostream>
 #include <ctime>

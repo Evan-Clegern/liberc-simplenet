@@ -42,10 +42,10 @@ const std::string c_NetError::fullWhat() const noexcept {
 
 
 c_IPv4Addr::c_IPv4Addr() {
-	A = 127; //Loopback
+	A = 0; //The "any" interface
 	B = 0;
 	C = 0;
-	D = 1;
+	D = 0;
 }
 void c_IPv4Addr::operator=(const c_IPv4Addr& b) {
 	this->A = b.A;
@@ -734,8 +734,9 @@ bool c_Socket_TCP::connectionEstablish(c_IPv4Addr i_client, u16 i_port) {
 
 		throw c_NetError("Unable to establish connection -- IOSocket not in TCP Connect mode!", ERR_MIN);
 	}
-	Clib::sockaddr_in tmpgoo = i_client.makeCSocket(i_port);
-	int X = Clib::connect(this->mv_baseSocketDesc, (Clib::sockaddr*)&tmpgoo, sizeof(tmpgoo));
+	Clib::sockaddr_in tmpgoo = (i_client.makeCSocket(i_port)); tmpgoo.sin_family = AF_INET;
+	const Clib::sockaddr_in* tmptr = &tmpgoo;
+	int X = Clib::connect(this->mv_baseSocketDesc, (Clib::sockaddr*)tmptr, sizeof(tmpgoo) );
 	
 	if (X != 0) {
 		if (errno == EADDRNOTAVAIL) {
@@ -755,13 +756,21 @@ bool c_Socket_TCP::connectionEstablish(c_IPv4Addr i_client, u16 i_port) {
 		} else if (errno == EINTR) {
 			throw c_NetError("Unable to establish connection -- Operation Interrupted!", ERR_LOW);
 		} else if (errno == EISCONN) {
-			return 1; //Already connected
+			return 0; //Already connected
 		} else if (errno == ENETUNREACH) {
 			throw c_NetError("Unable to establish connection -- Destination Unreachable!", ERR_MED);
 		} else if (errno == EPROTOTYPE) {
 			throw c_NetError("Unable to establish connection -- Bad Port Type!", ERR_LOW);
 		} else if (errno == ETIMEDOUT) {
 			throw c_NetError("Unable to establish connection -- Timed Out!", ERR_LOW);
+		} else if (errno == EINVAL) {
+			#ifndef DISABLE_DEBUG_MESSAGES
+				std::timespec_get(&TIMEN, TIME_UTC); 
+				std::strftime(BUFF, 79, "%H:%M:%S", std::localtime(&TIMEN.tv_sec) );
+				std::cout << '[' << BUFF << '.' << TIMEN.tv_nsec << "] EINVAL: The address_len argument is not a valid length" <<
+				" for the address family; or invalid address family in sockaddr structure.\n" << std::flush;
+			#endif
+			throw c_NetError("Unable to establish connection -- Developer Oversight with Pointer!", ERR_SEV);
 		} else {
 			throw c_NetError("Unable to establish connection -- Unknown Failure (" + std::to_string(errno) + ')', ERR_MED);
 		}
